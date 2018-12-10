@@ -32,8 +32,37 @@ impl<'a> Lexer<'a>{
       Some('+') => Token::PLUS,
       Some('{') => Token::LBRACE,
       Some('}') => Token::RBRACE,
-      Some(_) => Token::ILLEGAL,
+      Some(ch) => {
+        if is_letter(ch) {
+          self.read_identifier(ch)
+        }else{
+          Token::ILLEGAL
+        }
+      }
       None => Token::EOF,
     }
   }
+
+  fn peek_is_letter(&mut self) -> bool {
+      match self.peek_char() {
+          Some(&ch) => is_letter(ch),
+          None => false,
+      }
+  }
+
+  fn read_identifier(&mut self, ch: char) -> Token{
+    let mut ident = String::new();
+    ident.push(ch);
+    while self.peek_is_letter() {
+      match self.read_char() {
+        Some(ch) => ident.push(ch),
+        None => break,
+      };
+    }
+    Token::IDENT(ident)
+  }
+}
+
+fn is_letter(ch: char) -> bool {
+    ch.is_alphabetic() || ch == '_'
 }
