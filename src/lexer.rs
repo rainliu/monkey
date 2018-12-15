@@ -1,24 +1,26 @@
 use crate::token::*;
-use std::str::Chars;
 use std::iter::Peekable;
+use std::str::Chars;
 
 #[cfg(test)]
 mod lexer_test;
 
-struct Lexer<'a>{
+struct Lexer<'a> {
   input: Peekable<Chars<'a>>,
 }
 
-impl<'a> Lexer<'a>{
-  pub fn new(input:&str)->Lexer{
-    Lexer{input: input.chars().peekable()}
+impl<'a> Lexer<'a> {
+  pub fn new(input: &str) -> Lexer {
+    Lexer {
+      input: input.chars().peekable(),
+    }
   }
 
-  pub fn read_char(&mut self) -> Option<char>{
+  pub fn read_char(&mut self) -> Option<char> {
     self.input.next()
   }
 
-  pub fn peek_char(&mut self) ->Option<&char> {
+  pub fn peek_char(&mut self) -> Option<&char> {
     self.input.peek()
   }
 
@@ -35,7 +37,7 @@ impl<'a> Lexer<'a>{
       Some(ch) => {
         if is_letter(ch) {
           self.read_identifier(ch)
-        }else{
+        } else {
           Token::ILLEGAL
         }
       }
@@ -44,13 +46,13 @@ impl<'a> Lexer<'a>{
   }
 
   fn peek_is_letter(&mut self) -> bool {
-      match self.peek_char() {
-          Some(&ch) => is_letter(ch),
-          None => false,
-      }
+    match self.peek_char() {
+      Some(&ch) => is_letter(ch),
+      None => false,
+    }
   }
 
-  fn read_identifier(&mut self, ch: char) -> Token{
+  fn read_identifier(&mut self, ch: char) -> Token {
     let mut ident = String::new();
     ident.push(ch);
     while self.peek_is_letter() {
@@ -64,5 +66,5 @@ impl<'a> Lexer<'a>{
 }
 
 fn is_letter(ch: char) -> bool {
-    ch.is_alphabetic() || ch == '_'
+  ch.is_alphabetic() || ch == '_'
 }
