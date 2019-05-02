@@ -3,12 +3,15 @@ pub enum Token {
     ILLEGAL,
     EOF,
 
-    IDENT(String),
-    INT(String),
+    // Identifiers + literals
+    IDENT(String),  // add, foobar, x, y, ...
+    INT(String),    // 123456
 
+    // Operators
     ASSIGN,
     PLUS,
 
+    // Delimiters
     COMMA,
     SEMICOLON,
 
@@ -17,6 +20,7 @@ pub enum Token {
     LBRACE,
     RBRACE,
 
+    // Keywords
     FUNCTION,
     LET,
 }
