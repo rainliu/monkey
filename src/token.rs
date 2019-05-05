@@ -10,21 +10,34 @@ pub enum Token {
     INT(String),   // 123456
 
     // Operators
-    ASSIGN,
-    PLUS,
+    ASSIGN,   // =
+    PLUS,     // +
+    MINUS,    // -
+    BANG,     // !
+    ASTERISK, // *
+    SLASH,    // /
+    LT,       // <
+    GT,       // >
+    EQ,       // ==
+    NOT_EQ,   // !=
 
     // Delimiters
-    COMMA,
-    SEMICOLON,
+    COMMA,     // ,
+    SEMICOLON, // ;
 
-    LPAREN,
-    RPAREN,
-    LBRACE,
-    RBRACE,
+    LPAREN, // (
+    RPAREN, // )
+    LBRACE, // {
+    RBRACE, // }
 
     // Keywords
-    FUNCTION,
-    LET,
+    FUNCTION, // fn
+    LET,      // let
+    TRUE,     // true
+    FALSE,    // false
+    IF,       // if
+    ELSE,     // else
+    RETURN,   // return
 }
 
 lazy_static! {
@@ -32,6 +45,11 @@ lazy_static! {
         let mut map = HashMap::new();
         map.insert("fn", Token::FUNCTION);
         map.insert("let", Token::LET);
+        map.insert("true", Token::TRUE);
+        map.insert("false", Token::FALSE);
+        map.insert("if", Token::IF);
+        map.insert("else", Token::ELSE);
+        map.insert("return", Token::RETURN);
         map
     };
 }

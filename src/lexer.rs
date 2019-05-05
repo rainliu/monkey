@@ -28,12 +28,40 @@ impl<'a> Lexer<'a> {
         self.skip_whitespace();
 
         match self.read_char() {
-            Some('=') => Token::ASSIGN,
+            Some('=') => {
+                let eq = match self.peek_char() {
+                    Some(&ch) => ch == '=',
+                    None => false,
+                };
+                if eq {
+                    self.read_char();
+                    Token::EQ
+                } else {
+                    Token::ASSIGN
+                }
+            }
+            Some('+') => Token::PLUS,
+            Some('-') => Token::MINUS,
+            Some('!') => {
+                let neq = match self.peek_char() {
+                    Some(&ch) => ch == '=',
+                    None => false,
+                };
+                if neq {
+                    self.read_char();
+                    Token::NOT_EQ
+                } else {
+                    Token::BANG
+                }
+            }
+            Some('/') => Token::SLASH,
+            Some('*') => Token::ASTERISK,
+            Some('<') => Token::LT,
+            Some('>') => Token::GT,
             Some(';') => Token::SEMICOLON,
+            Some(',') => Token::COMMA,
             Some('(') => Token::LPAREN,
             Some(')') => Token::RPAREN,
-            Some(',') => Token::COMMA,
-            Some('+') => Token::PLUS,
             Some('{') => Token::LBRACE,
             Some('}') => Token::RBRACE,
             Some(ch) => {

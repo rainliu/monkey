@@ -78,3 +78,65 @@ fn test_next_token_statements() {
         assert_eq!(tok, *test);
     }
 }
+
+#[test]
+fn test_next_token_extended() {
+    let input = "!-/*5;
+    5 < 10 > 5;
+    if ( 5 < 10 ) {
+        return true;
+    } else {
+        return false;
+    }
+
+    10 == 10;
+    10 != 9;
+    ";
+
+    let tests = vec![
+        Token::BANG,
+        Token::MINUS,
+        Token::SLASH,
+        Token::ASTERISK,
+        Token::INT("5".to_string()),
+        Token::SEMICOLON,
+        Token::INT("5".to_string()),
+        Token::LT,
+        Token::INT("10".to_string()),
+        Token::GT,
+        Token::INT("5".to_string()),
+        Token::SEMICOLON,
+        Token::IF,
+        Token::LPAREN,
+        Token::INT("5".to_string()),
+        Token::LT,
+        Token::INT("10".to_string()),
+        Token::RPAREN,
+        Token::LBRACE,
+        Token::RETURN,
+        Token::TRUE,
+        Token::SEMICOLON,
+        Token::RBRACE,
+        Token::ELSE,
+        Token::LBRACE,
+        Token::RETURN,
+        Token::FALSE,
+        Token::SEMICOLON,
+        Token::RBRACE,
+        Token::INT("10".to_string()),
+        Token::EQ,
+        Token::INT("10".to_string()),
+        Token::SEMICOLON,
+        Token::INT("10".to_string()),
+        Token::NOT_EQ,
+        Token::INT("9".to_string()),
+        Token::SEMICOLON,
+        Token::EOF,
+    ];
+
+    let mut l = Lexer::new(input);
+    for test in &tests {
+        let tok = l.next_token();
+        assert_eq!(tok, *test);
+    }
+}
