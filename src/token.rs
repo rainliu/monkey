@@ -19,7 +19,7 @@ pub enum Token {
     LT,       // <
     GT,       // >
     EQ,       // ==
-    NOT_EQ,   // !=
+    NEQ,      // !=
 
     // Delimiters
     COMMA,     // ,

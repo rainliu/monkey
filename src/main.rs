@@ -1,3 +1,5 @@
+use monkey::evaluator;
+
 fn main() {
-    println!("Hello, world!");
+    evaluator::run();
 }

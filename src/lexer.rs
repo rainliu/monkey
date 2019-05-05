@@ -5,7 +5,7 @@ use std::str::Chars;
 #[cfg(test)]
 mod lexer_test;
 
-struct Lexer<'a> {
+pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
 }
 
@@ -49,7 +49,7 @@ impl<'a> Lexer<'a> {
                 };
                 if neq {
                     self.read_char();
-                    Token::NOT_EQ
+                    Token::NEQ
                 } else {
                     Token::BANG
                 }

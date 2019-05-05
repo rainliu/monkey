@@ -128,7 +128,7 @@ fn test_next_token_extended() {
         Token::INT("10".to_string()),
         Token::SEMICOLON,
         Token::INT("10".to_string()),
-        Token::NOT_EQ,
+        Token::NEQ,
         Token::INT("9".to_string()),
         Token::SEMICOLON,
         Token::EOF,
