@@ -1,5 +1,10 @@
-use monkey::evaluator;
+use monkey::repl;
+use std::io;
 
-fn main() {
-    evaluator::run();
+fn main() -> io::Result<()> {
+    println!("Welcome to the Monkey REPL!");
+    let input = io::stdin();
+    let output = io::stdout();
+    let result = repl::start(input.lock(), output.lock());
+    result
 }
