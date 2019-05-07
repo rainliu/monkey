@@ -1,4 +1,6 @@
 use crate::token::*;
+
+use std::iter::Iterator;
 use std::iter::Peekable;
 use std::str::Chars;
 
@@ -136,5 +138,17 @@ impl<'a> Lexer<'a> {
 
     fn is_digital(ch: char) -> bool {
         ch.is_digit(10)
+    }
+}
+
+impl<'a> Iterator for Lexer<'a> {
+    type Item = Token;
+    fn next(&mut self) -> Option<Self::Item> {
+        let tok = self.next_token();
+        if tok == Token::EOF {
+            None
+        }else{
+            Some(tok)
+        }
     }
 }
