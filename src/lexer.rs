@@ -147,7 +147,7 @@ impl<'a> Iterator for Lexer<'a> {
         let tok = self.next_token();
         if tok == Token::EOF {
             None
-        }else{
+        } else {
             Some(tok)
         }
     }
