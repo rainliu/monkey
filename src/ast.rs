@@ -13,13 +13,21 @@ pub trait Expression: Node {
 }
 
 pub struct Program<T: Statement> {
-    statements: Vec<T>,
+    pub statements: Vec<T>,
 }
 
 impl<T: Statement> Program<T> {
+    pub fn new() -> Self {
+        Program {
+            statements: Vec::new(),
+        }
+    }
+}
+
+impl<T: Statement> Node for Program<T> {
     fn token_literal(&self) -> &str {
-        if let Some(s) = self.statements.first() {
-            s.token_literal()
+        if let Some(stmt) = self.statements.first() {
+            stmt.token_literal()
         } else {
             ""
         }
@@ -27,34 +35,39 @@ impl<T: Statement> Program<T> {
 }
 
 pub struct Identifier {
-    token: Token,
-    value: String,
+    pub token: Token,
 }
 
-impl Identifier {
-    fn expression_node() {}
-
+impl Node for Identifier {
     fn token_literal(&self) -> &str {
         match &self.token {
-            Token::IDENT(s) => s.as_str(),
+            Token::IDENT(_) => "IDENT",
             _ => "",
         }
     }
 }
 
-pub struct LetStatement<T: Expression> {
-    token: Token,
-    name: Identifier,
-    value: T,
+impl Expression for Identifier {
+    fn expression_node() {}
 }
 
-impl<T: Expression> LetStatement<T> {
-    fn statement_node() {}
+pub struct LetStatement {
+    //<T: Expression>
+    pub token: Token,
+    pub name: Identifier,
+    //pub value: T,
+}
 
+//impl<T: Expression> LetStatement<T> {
+impl Node for LetStatement {
     fn token_literal(&self) -> &str {
         match self.token {
-            Token::LET => "let",
+            Token::LET => "LET",
             _ => "",
         }
     }
+}
+
+impl Statement for LetStatement {
+    fn statement_node() {}
 }
