@@ -18,8 +18,8 @@ pub struct Program<T: Statement> {
 
 impl<T: Statement> Program<T> {
     fn token_literal(&self) -> &str {
-        if self.statements.len() > 0 {
-            self.statements[0].token_literal()
+        if let Some(s) = self.statements.first() {
+            s.token_literal()
         } else {
             ""
         }
