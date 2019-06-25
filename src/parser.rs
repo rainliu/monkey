@@ -9,9 +9,9 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    //fn new(lexer: &'a mut Lexer) -> Parser<'a> {
-    //    Parser {
-    //        lexer: lexer.iter().peakable(),
-    //    }
-    //}
+    pub fn new(lexer: Lexer<'a>) -> Self {
+        Parser {
+            lexer: lexer.peekable(),
+        }
+    }
 }
