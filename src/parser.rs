@@ -4,6 +4,9 @@ use crate::ast::*;
 use crate::lexer::*;
 use crate::token::*;
 
+#[cfg(test)]
+mod parser_test;
+
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
 }
@@ -45,6 +48,13 @@ impl<'a> Parser<'a> {
             Some(&Token::ASSIGN) => self.lexer.next(),
             _ => return None,
         };
+
+        //TODO:
+        while let Some(t) = self.lexer.next() {
+            if t == Token::SEMICOLON {
+                break;
+            }
+        }
 
         Some(LetStatement {
             token,
