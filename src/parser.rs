@@ -47,6 +47,7 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self) -> Option<Statement> {
         match self.cur_token {
             Token::LET => self.parse_statement_let(),
+            Token::RETURN => self.parse_statement_return(),
             _ => None,
         }
     }
@@ -87,6 +88,17 @@ impl<'a> Parser<'a> {
             Identifier { token: ident.clone() },
             Expression::Ident(Identifier { token: ident }),
         ))
+    }
+
+    fn parse_statement_return(&mut self) -> Option<Statement> {
+        self.next_token();
+
+        //TODO:
+        while self.cur_token != Token::SEMICOLON && self.cur_token != Token::EOF {
+            self.next_token();
+        }
+
+        Some(Statement::Return(Expression::Ident(Identifier { token: Token::RETURN })))
     }
 
     fn next_token(&mut self) {
