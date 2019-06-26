@@ -18,7 +18,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_program(&mut self) -> Program<impl Statement> {
+    pub fn parse_program(&mut self) -> Program {
         let mut program = Program::new();
 
         while self.lexer.peek() != None && self.lexer.peek() != Some(&Token::EOF) {
@@ -31,16 +31,16 @@ impl<'a> Parser<'a> {
         program
     }
 
-    fn parse_statement(&mut self) -> Option<impl Statement> {
+    fn parse_statement(&mut self) -> Option<Statement> {
         match self.lexer.peek() {
             Some(&Token::LET) => self.parse_statement_let(),
             _ => None,
         }
     }
 
-    fn parse_statement_let(&mut self) -> Option<impl Statement> {
-        let token = self.lexer.next().unwrap();
-        let name = match self.lexer.peek() {
+    fn parse_statement_let(&mut self) -> Option<Statement> {
+        self.lexer.next().unwrap();
+        let ident = match self.lexer.peek() {
             Some(&Token::IDENT(_)) => self.lexer.next().unwrap(),
             _ => return None,
         };
@@ -56,10 +56,9 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Some(LetStatement {
-            token,
-            name: Identifier { token: name },
-            //value: ,
-        })
+        Some(Statement::Let(
+            Identifier { token: ident.clone() },
+            Expression::Ident(Identifier { token: ident }),
+        ))
     }
 }

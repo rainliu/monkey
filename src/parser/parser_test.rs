@@ -19,7 +19,16 @@ fn test_statement_let() {
     }
 }
 
-fn is_statement_let(s: &impl Statement, name: &str) -> bool {
-    assert_eq!(s.token_literal(), "LET");
-    true
+fn is_statement_let(s: &Statement, name: &str) -> bool {
+    match s {
+        Statement::Let(ident, _expr) => {
+            match &ident.token {
+                Token::IDENT(s) => assert_eq!(s, name),
+                _ => {},
+            };
+
+            true
+        },
+        //_ => false,
+    }
 }
