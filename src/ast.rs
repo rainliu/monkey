@@ -9,19 +9,17 @@ mod ast_test;
 pub enum Statement {
     Let(Identifier, Expression),
     Return(Expression),
+    Expression(Expression),
 }
 
 impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{};",
-            match self {
-                Statement::Let(stmt, expr) => format!("let {} = {}", stmt, expr),
-                Statement::Return(ret) => format!("return {}", ret),
-                //Statement::Expression(exp) => format!("{};", exp),
-            }
-        )
+        let s = match self {
+            Statement::Let(stmt, expr) => format!("let {} = {}", stmt, expr),
+            Statement::Return(ret) => format!("return {}", ret),
+            Statement::Expression(exp) => format!("{};", exp),
+        };
+        write!(f, "{};", s)
     }
 }
 
@@ -32,13 +30,10 @@ pub enum Expression {
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Expression::Ident(ident) => format!("{}", ident),
-            }
-        )
+        let s = match self {
+            Expression::Ident(ident) => format!("{}", ident),
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -49,11 +44,11 @@ pub struct Program {
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let statements: Vec<String> = (&self.statements)
+        let stmts: Vec<String> = (&self.statements)
             .iter()
             .map(|stmt| stmt.to_string())
             .collect();
-        write!(f, "{}", statements.join("\n"))
+        write!(f, "{}", stmts.join("\n"))
     }
 }
 
