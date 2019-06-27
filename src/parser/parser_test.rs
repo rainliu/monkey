@@ -53,7 +53,7 @@ fn test_statement_let_errors() {
 
     let program = p.parse_program();
     check_parser_errors(&p);
-    assert_eq!(program.statements.len(), 0);
+    assert_eq!(program.statements.len(), 3);
 }
 
 #[test]
@@ -72,7 +72,7 @@ fn test_statement_return() {
     for stmt in &program.statements {
         match stmt {
             Statement::Return(_) => {}
-            _ => assert!(false, "statement not Return"),
+            _ => assert!(false, "Statement is not Return"),
         };
     }
 }
@@ -90,13 +90,33 @@ fn test_expression_identifier() {
 
     for stmt in &program.statements {
         match stmt {
-            Statement::Expression(expr) => {
-                match expr {
-                    Expression::Ident(ident) => assert_eq!(ident.0, "foobar"),
-                }
-
+            Statement::Expression(expr) => match expr {
+                Expression::Ident(ident) => assert_eq!(ident.0, "foobar"),
+                _ => assert!(false, "Expression is not Ident"),
             },
-            _ => assert!(false, "statement not Expression"),
+            _ => assert!(false, "Statement is not Expression"),
+        };
+    }
+}
+
+#[test]
+fn test_expression_integer() {
+    let input = "5;";
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+    assert_eq!(program.statements.len(), 1);
+
+    for stmt in &program.statements {
+        match stmt {
+            Statement::Expression(expr) => match expr {
+                Expression::Int(int) => assert_eq!(int.0, 5),
+                _ => assert!(false, "Expression is not Int"),
+            },
+            _ => assert!(false, "Statement is not Expression"),
         };
     }
 }

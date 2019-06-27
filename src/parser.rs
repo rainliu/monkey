@@ -3,6 +3,7 @@ use std::iter::Peekable;
 use crate::ast::*;
 use crate::lexer::*;
 use crate::token::*;
+use std::fs::OpenOptions;
 
 #[cfg(test)]
 mod parser_test;
@@ -13,12 +14,12 @@ type InfixParseFn = fn(&Token, &Expression) -> Option<Expression>;
 #[derive(Debug, Clone, PartialEq)]
 enum Precedence {
     LOWEST = 0,
-    EQUALS,       // ==
+    EQUALS,      // ==
     LESSGREATER, // > or <
-    SUM,          // +
-    PRODUCT,      // *
-    PREFIX,       // -X or !X
-    CALL,         // myFunc(X)
+    SUM,         // +
+    PRODUCT,     // *
+    PREFIX,      // -X or !X
+    CALL,        // myFunc(X)
 }
 
 pub struct Parser<'a> {
@@ -51,6 +52,7 @@ impl<'a> Parser<'a> {
     fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
         match token {
             Token::IDENT(_) => Some(Parser::parse_indentifier),
+            Token::INT(_) => Some(Parser::parse_integer),
             _ => None,
         }
     }
@@ -58,6 +60,16 @@ impl<'a> Parser<'a> {
     fn parse_indentifier(token: &Token) -> Option<Expression> {
         match token {
             Token::IDENT(ident) => Some(Expression::Ident(Identifier(ident.to_string()))),
+            _ => None,
+        }
+    }
+
+    fn parse_integer(token: &Token) -> Option<Expression> {
+        match token {
+            Token::INT(int) => match int.parse::<i64>() {
+                Ok(i) => Some(Expression::Int(Integer(i))),
+                _ => None,
+            },
             _ => None,
         }
     }

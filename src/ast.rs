@@ -26,12 +26,14 @@ impl fmt::Display for Statement {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Ident(Identifier),
+    Int(Integer),
 }
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {
             Expression::Ident(ident) => format!("{}", ident),
+            Expression::Int(int) => format!("{}", int),
         };
         write!(f, "{}", s)
     }
@@ -64,6 +66,15 @@ impl Program {
 pub struct Identifier(pub String);
 
 impl fmt::Display for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Integer(pub i64);
+
+impl fmt::Display for Integer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }
