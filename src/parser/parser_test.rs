@@ -37,11 +37,7 @@ fn test_statement_let_errors() {
 fn is_statement_let(stmt: &Statement, name: &str) -> bool {
     match stmt {
         Statement::Let(ident, _expr) => {
-            match &ident.token {
-                Token::IDENT(s) => assert_eq!(s, name),
-                _ => {},
-            };
-
+            assert_eq!(ident.0, name);
             true
         },
         _ => false,

@@ -65,7 +65,10 @@ impl<'a> Parser<'a> {
             },
         };
 
-        let ident = self.cur_token.clone();
+        let ident = match &self.cur_token {
+            Token::IDENT(ident) => ident.to_string(),
+            _ => return None,
+        };
 
         match self.lexer.peek() {
             Some(&Token::ASSIGN) => self.next_token(),
@@ -85,8 +88,8 @@ impl<'a> Parser<'a> {
         }
 
         Some(Statement::Let(
-            Identifier { token: ident.clone() },
-            Expression::Ident(Identifier { token: ident }),
+            Identifier(ident.clone()),
+            Expression::Ident(Identifier(ident)),
         ))
     }
 
@@ -98,7 +101,7 @@ impl<'a> Parser<'a> {
             self.next_token();
         }
 
-        Some(Statement::Return(Expression::Ident(Identifier { token: Token::RETURN })))
+        Some(Statement::Return(Expression::Ident(Identifier("TODO".to_string()))))
     }
 
     fn next_token(&mut self) {
