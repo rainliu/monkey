@@ -273,7 +273,7 @@ impl<'a> Parser<'a> {
                     }
 
                     left = expr.unwrap();
-                } else{
+                } else {
                     break;
                 }
             }

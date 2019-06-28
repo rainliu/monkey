@@ -194,3 +194,31 @@ fn test_parsing_infix_expressions() {
         }
     }
 }
+
+#[test]
+fn test_operator_precedence_parsing() {
+    let tests = vec![
+        ("-a*b", "((-a) * b);"),
+        ("!-a", "(!(-a));"),
+        ("a+b+c", "((a + b) + c);"),
+        ("a+b-c", "((a + b) - c);"),
+        ("a*b*c", "((a * b) * c);"),
+        ("a*b/c", "((a * b) / c);"),
+        ("a+b/c", "(a + (b / c));"),
+        ("a+b*c+d/e-f", "(((a + (b * c)) + (d / e)) - f);"),
+        ("3+4; -5*5", "(3 + 4);\n((-5) * 5);"),
+        ("5>4==3<4", "((5 > 4) == (3 < 4));"),
+        ("5>4!=3<4", "((5 > 4) != (3 < 4));"),
+        ("3+4*5==3*1+4*5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));"),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+        assert_eq!(program.to_string(), tt.1);
+    }
+}

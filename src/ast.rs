@@ -17,7 +17,7 @@ impl fmt::Display for Statement {
         let s = match self {
             Statement::Let(stmt, expr) => format!("let {} = {}", stmt, expr),
             Statement::Return(ret) => format!("return {}", ret),
-            Statement::Expression(exp) => format!("{};", exp),
+            Statement::Expression(exp) => format!("{}", exp),
         };
         write!(f, "{};", s)
     }
@@ -36,8 +36,8 @@ impl fmt::Display for Expression {
         let s = match self {
             Expression::Ident(ident) => format!("{}", ident),
             Expression::Int(int) => format!("{}", int),
-            Expression::Prefix(prefix, right) => format!("{}{}", prefix, *right),
-            Expression::Infix(left, infix, right) => format!("{}{}{}", *left, infix, *right),
+            Expression::Prefix(prefix, right) => format!("({}{})", prefix, *right),
+            Expression::Infix(left, infix, right) => format!("({} {} {})", *left, infix, *right),
         };
         write!(f, "{}", s)
     }
