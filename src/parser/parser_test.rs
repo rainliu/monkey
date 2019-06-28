@@ -132,7 +132,7 @@ fn test_expression_integer() {
 }
 
 #[test]
-fn test_parseing_prefix_expression() {
+fn test_parsing_prefix_expressions() {
     let prefix_tests = vec![("!5;", "!", 5), ("-15", "-", 15)];
 
     for tt in prefix_tests {
@@ -146,11 +146,48 @@ fn test_parseing_prefix_expression() {
         for stmt in &program.statements {
             match stmt {
                 Statement::Expression(expr) => match expr {
-                    Expression::Prefix(operator, integer) => {
-                        assert_eq!(operator.to_string(), tt.1);
-                        assert_eq!(is_expression_integer(integer, tt.2), true);
+                    Expression::Prefix(prefix, right) => {
+                        assert_eq!(prefix.to_string(), tt.1);
+                        assert_eq!(is_expression_integer(right, tt.2), true);
                     }
                     _ => assert!(false, "Expression is not Prefix"),
+                },
+                _ => assert!(false, "Statement is not Expression"),
+            };
+        }
+    }
+}
+
+#[test]
+fn test_parsing_infix_expressions() {
+    let infix_tests = vec![
+        ("5+5;", 5, "+", 5),
+        ("5-5;", 5, "-", 5),
+        ("5*5;", 5, "*", 5),
+        ("5/5;", 5, "/", 5),
+        ("5>5;", 5, ">", 5),
+        ("5<5;", 5, "<", 5),
+        ("5==5;", 5, "==", 5),
+        ("5!=5;", 5, "!=", 5),
+    ];
+
+    for tt in infix_tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+        assert_eq!(program.statements.len(), 1);
+
+        for stmt in &program.statements {
+            match stmt {
+                Statement::Expression(expr) => match expr {
+                    Expression::Infix(left, infix, right) => {
+                        assert_eq!(is_expression_integer(left, tt.1), true);
+                        assert_eq!(infix.to_string(), tt.2);
+                        assert_eq!(is_expression_integer(right, tt.3), true);
+                    }
+                    _ => assert!(false, "Expression is not Infix"),
                 },
                 _ => assert!(false, "Statement is not Expression"),
             };

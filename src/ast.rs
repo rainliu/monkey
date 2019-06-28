@@ -28,6 +28,7 @@ pub enum Expression {
     Ident(Identifier),
     Int(Integer),
     Prefix(Prefix, Box<Expression>),
+    Infix(Box<Expression>, Infix, Box<Expression>),
 }
 
 impl fmt::Display for Expression {
@@ -35,7 +36,8 @@ impl fmt::Display for Expression {
         let s = match self {
             Expression::Ident(ident) => format!("{}", ident),
             Expression::Int(int) => format!("{}", int),
-            Expression::Prefix(prefix, expr) => format!("{}{}", prefix, *expr),
+            Expression::Prefix(prefix, right) => format!("{}{}", prefix, *right),
+            Expression::Infix(left, infix, right) => format!("{}{}{}", *left, infix, *right),
         };
         write!(f, "{}", s)
     }
@@ -84,8 +86,8 @@ impl fmt::Display for Integer {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Prefix {
-    BANG,
-    MINUS,
+    MINUS, // -
+    BANG,  // !
 }
 
 impl fmt::Display for Prefix {
@@ -94,8 +96,39 @@ impl fmt::Display for Prefix {
             f,
             "{}",
             match self {
-                Prefix::BANG => "!",
                 Prefix::MINUS => "-",
+                Prefix::BANG => "!",
+            }
+        )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Infix {
+    PLUS,     // +
+    MINUS,    // -
+    ASTERISK, // *
+    SLASH,    // /
+    LT,       // <
+    GT,       // >
+    EQ,       // ==
+    NEQ,      // !=
+}
+
+impl fmt::Display for Infix {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Infix::PLUS => "+",
+                Infix::MINUS => "-",
+                Infix::ASTERISK => "*",
+                Infix::SLASH => "/",
+                Infix::LT => "<",
+                Infix::GT => ">",
+                Infix::EQ => "==",
+                Infix::NEQ => "!=",
             }
         )
     }

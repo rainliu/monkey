@@ -10,7 +10,7 @@ mod parser_test;
 type PrefixParseFn = fn(parser: &mut Parser) -> Option<Expression>;
 type InfixParseFn = fn(parser: &mut Parser, left: Expression) -> Option<Expression>;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 enum Precedence {
     LOWEST = 0,
     EQUALS,      // ==
@@ -19,6 +19,17 @@ enum Precedence {
     PRODUCT,     // *
     PREFIX,      // -X or !X
     CALL,        // myFunc(X)
+}
+
+#[inline]
+fn token2precedence(token: &Token) -> Precedence {
+    match token {
+        Token::EQ | Token::NEQ => Precedence::EQUALS,
+        Token::LT | Token::GT => Precedence::LESSGREATER,
+        Token::PLUS | Token::MINUS => Precedence::SUM,
+        Token::SLASH | Token::ASTERISK => Precedence::PRODUCT,
+        _ => Precedence::LOWEST,
+    }
 }
 
 pub struct Parser<'a> {
@@ -48,11 +59,31 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn prefix_parse_fn(&mut self) -> Option<PrefixParseFn> {
-        match self.cur_token {
+    pub fn errors(&self) -> &[String] {
+        &self.errors
+    }
+
+    #[inline]
+    fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
+        match token {
             Token::IDENT(_) => Some(Parser::parse_indentifier),
             Token::INT(_) => Some(Parser::parse_integer),
             Token::BANG | Token::MINUS => Some(Parser::parse_prefix),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    fn infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
+        match token {
+            Token::EQ
+            | Token::NEQ
+            | Token::LT
+            | Token::GT
+            | Token::PLUS
+            | Token::MINUS
+            | Token::SLASH
+            | Token::ASTERISK => Some(Parser::parse_infix),
             _ => None,
         }
     }
@@ -90,12 +121,27 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
-        None
-    }
+    fn parse_infix(parser: &mut Parser, left: Expression) -> Option<Expression> {
+        let infix = match &parser.cur_token {
+            Token::PLUS => Infix::PLUS,
+            Token::MINUS => Infix::MINUS,
+            Token::ASTERISK => Infix::ASTERISK,
+            Token::SLASH => Infix::SLASH,
+            Token::LT => Infix::LT,
+            Token::GT => Infix::GT,
+            Token::EQ => Infix::EQ,
+            Token::NEQ => Infix::NEQ,
+            _ => return None,
+        };
 
-    pub fn errors(&self) -> &[String] {
-        &self.errors
+        let cur_precedence = token2precedence(&parser.cur_token);
+        parser.next_token();
+
+        if let Some(right) = parser.parse_expression(cur_precedence) {
+            Some(Expression::Infix(Box::new(left), infix, Box::new(right)))
+        } else {
+            None
+        }
     }
 
     pub fn parse_program(&mut self) -> Program {
@@ -200,7 +246,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
-        match self.prefix_parse_fn() {
+        let opt_left = match Parser::prefix_parse_fn(&self.cur_token) {
             Some(prefix) => prefix(self),
             _ => {
                 self.errors.push(format!(
@@ -209,6 +255,31 @@ impl<'a> Parser<'a> {
                 ));
                 None
             }
+        };
+
+        if let Some(mut left) = opt_left {
+            while let Some(peek_token) = self.lexer.peek() {
+                if *peek_token != Token::SEMICOLON && precedence < token2precedence(peek_token) {
+                    let infix = match Parser::infix_parse_fn(peek_token) {
+                        Some(infix) => infix,
+                        _ => break,
+                    };
+
+                    self.next_token();
+
+                    let expr = infix(self, left);
+                    if expr.is_none() {
+                        return None;
+                    }
+
+                    left = expr.unwrap();
+                } else{
+                    break;
+                }
+            }
+            Some(left)
+        } else {
+            None
         }
     }
 }
