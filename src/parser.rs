@@ -3,13 +3,12 @@ use std::iter::Peekable;
 use crate::ast::*;
 use crate::lexer::*;
 use crate::token::*;
-use std::fs::OpenOptions;
 
 #[cfg(test)]
 mod parser_test;
 
-type PrefixParseFn = fn(&Token) -> Option<Expression>;
-type InfixParseFn = fn(&Token, &Expression) -> Option<Expression>;
+type PrefixParseFn = fn(parser: &mut Parser) -> Option<Expression>;
+type InfixParseFn = fn(parser: &mut Parser, left: Expression) -> Option<Expression>;
 
 #[derive(Debug, Clone, PartialEq)]
 enum Precedence {
@@ -49,28 +48,45 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
-        match token {
+    fn prefix_parse_fn(&mut self) -> Option<PrefixParseFn> {
+        match self.cur_token {
             Token::IDENT(_) => Some(Parser::parse_indentifier),
             Token::INT(_) => Some(Parser::parse_integer),
+            Token::BANG | Token::MINUS => Some(Parser::parse_prefix),
             _ => None,
         }
     }
 
-    fn parse_indentifier(token: &Token) -> Option<Expression> {
-        match token {
+    fn parse_indentifier(parser: &mut Parser) -> Option<Expression> {
+        match &parser.cur_token {
             Token::IDENT(ident) => Some(Expression::Ident(Identifier(ident.to_string()))),
             _ => None,
         }
     }
 
-    fn parse_integer(token: &Token) -> Option<Expression> {
-        match token {
+    fn parse_integer(parser: &mut Parser) -> Option<Expression> {
+        match &parser.cur_token {
             Token::INT(int) => match int.parse::<i64>() {
                 Ok(i) => Some(Expression::Int(Integer(i))),
                 _ => None,
             },
             _ => None,
+        }
+    }
+
+    fn parse_prefix(parser: &mut Parser) -> Option<Expression> {
+        let prefix = match &parser.cur_token {
+            Token::BANG => Prefix::BANG,
+            Token::MINUS => Prefix::MINUS,
+            _ => return None,
+        };
+
+        parser.next_token();
+
+        if let Some(right) = parser.parse_expression(Precedence::PREFIX) {
+            Some(Expression::Prefix(prefix, Box::new(right)))
+        } else {
+            None
         }
     }
 
@@ -183,10 +199,16 @@ impl<'a> Parser<'a> {
         Some(stmt)
     }
 
-    fn parse_expression(&self, precedence: Precedence) -> Option<Expression> {
-        match Parser::prefix_parse_fn(&self.cur_token) {
-            Some(prefix) => prefix(&self.cur_token),
-            _ => None,
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
+        match self.prefix_parse_fn() {
+            Some(prefix) => prefix(self),
+            _ => {
+                self.errors.push(format!(
+                    "no prefix parse function for {:?} found",
+                    self.cur_token
+                ));
+                None
+            }
         }
     }
 }

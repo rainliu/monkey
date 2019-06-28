@@ -22,6 +22,16 @@ fn is_statement_let(stmt: &Statement, name: &str) -> bool {
     }
 }
 
+fn is_expression_integer(expr: &Expression, value: i64) -> bool {
+    match expr {
+        Expression::Int(int) => {
+            assert_eq!(int.0, value);
+            true
+        }
+        _ => false,
+    }
+}
+
 #[test]
 fn test_statement_let() {
     let input = "let x = 5;
@@ -118,5 +128,32 @@ fn test_expression_integer() {
             },
             _ => assert!(false, "Statement is not Expression"),
         };
+    }
+}
+
+#[test]
+fn test_parseing_prefix_expression() {
+    let prefix_tests = vec![("!5;", "!", 5), ("-15", "-", 15)];
+
+    for tt in prefix_tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+        assert_eq!(program.statements.len(), 1);
+
+        for stmt in &program.statements {
+            match stmt {
+                Statement::Expression(expr) => match expr {
+                    Expression::Prefix(operator, integer) => {
+                        assert_eq!(operator.to_string(), tt.1);
+                        assert_eq!(is_expression_integer(integer, tt.2), true);
+                    }
+                    _ => assert!(false, "Expression is not Prefix"),
+                },
+                _ => assert!(false, "Statement is not Expression"),
+            };
+        }
     }
 }

@@ -27,6 +27,7 @@ impl fmt::Display for Statement {
 pub enum Expression {
     Ident(Identifier),
     Int(Integer),
+    Prefix(Prefix, Box<Expression>),
 }
 
 impl fmt::Display for Expression {
@@ -34,6 +35,7 @@ impl fmt::Display for Expression {
         let s = match self {
             Expression::Ident(ident) => format!("{}", ident),
             Expression::Int(int) => format!("{}", int),
+            Expression::Prefix(prefix, expr) => format!("{}{}", prefix, *expr),
         };
         write!(f, "{}", s)
     }
@@ -77,5 +79,24 @@ pub struct Integer(pub i64);
 impl fmt::Display for Integer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Prefix {
+    BANG,
+    MINUS,
+}
+
+impl fmt::Display for Prefix {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Prefix::BANG => "!",
+                Prefix::MINUS => "-",
+            }
+        )
     }
 }
