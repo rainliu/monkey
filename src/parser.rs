@@ -51,6 +51,24 @@ impl<'a> Parser<'a> {
         p
     }
 
+    pub fn parse_program(&mut self) -> Program {
+        let mut program = Program::new();
+
+        while self.cur_token != Token::EOF {
+            let stmt = self.parse_statement();
+            if let Some(stmt) = stmt {
+                program.statements.push(stmt);
+            }
+            self.next_token();
+        }
+
+        program
+    }
+
+    pub fn errors(&self) -> &[String] {
+        &self.errors
+    }
+
     fn next_token(&mut self) {
         if let Some(token) = self.lexer.next() {
             self.cur_token = token;
@@ -95,19 +113,16 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn errors(&self) -> &[String] {
-        &self.errors
-    }
-
     #[inline]
     fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
         match token {
-            Token::IDENT(_) => Some(Parser::parse_indentifier),
+            Token::IDENT(_) => Some(Parser::parse_identifier),
             Token::INT(_) => Some(Parser::parse_integer),
             Token::BANG | Token::MINUS => Some(Parser::parse_prefix),
             Token::TRUE | Token::FALSE => Some(Parser::parse_boolean),
             Token::LPAREN => Some(Parser::parse_parenthesis),
             Token::IF => Some(Parser::parse_if),
+            Token::FUNCTION => Some(Parser::parse_function),
             _ => None,
         }
     }
@@ -127,7 +142,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_indentifier(parser: &mut Parser) -> Option<Expression> {
+    fn parse_identifier(parser: &mut Parser) -> Option<Expression> {
         match &parser.cur_token {
             Token::IDENT(ident) => Some(Expression::Ident(Identifier(ident.to_string()))),
             _ => None,
@@ -194,7 +209,7 @@ impl<'a> Parser<'a> {
                         return None;
                     }
 
-                    Some(Box::new(parser.parse_statement_block()))
+                    Some(parser.parse_statement_block())
                 }
                 _ => None,
             }
@@ -204,9 +219,28 @@ impl<'a> Parser<'a> {
 
         Some(Expression::If(
             Box::new(condition.unwrap()),
-            Box::new(consequence),
+            consequence,
             alternative,
         ))
+    }
+
+    fn parse_function(parser: &mut Parser) -> Option<Expression> {
+        if !parser.expect_peek(Token::LPAREN) {
+            return None;
+        }
+
+        let params = parser.parse_function_parameters();
+        if params.is_none() {
+            return None;
+        }
+
+        if !parser.expect_peek(Token::LBRACE) {
+            return None;
+        }
+
+        let body = parser.parse_statement_block();
+
+        Some(Expression::Function(params.unwrap(), body))
     }
 
     fn parse_prefix(parser: &mut Parser) -> Option<Expression> {
@@ -246,34 +280,6 @@ impl<'a> Parser<'a> {
         } else {
             None
         }
-    }
-
-    pub fn parse_program(&mut self) -> Program {
-        let mut program = Program::new();
-
-        while self.cur_token != Token::EOF {
-            let stmt = self.parse_statement();
-            if let Some(stmt) = stmt {
-                program.statements.push(stmt);
-            }
-            self.next_token();
-        }
-
-        program
-    }
-
-    pub fn parse_statement_block(&mut self) -> BlockStatement {
-        let mut program = Program::new();
-
-        while self.cur_token != Token::RBRACE && self.cur_token != Token::EOF {
-            let stmt = self.parse_statement();
-            if let Some(stmt) = stmt {
-                program.statements.push(stmt);
-            }
-            self.next_token();
-        }
-
-        program
     }
 
     fn parse_statement(&mut self) -> Option<Statement> {
@@ -336,6 +342,53 @@ impl<'a> Parser<'a> {
         };
 
         Some(stmt)
+    }
+
+    fn parse_statement_block(&mut self) -> BlockStatement {
+        let mut program = Program::new();
+
+        while self.cur_token != Token::RBRACE && self.cur_token != Token::EOF {
+            let stmt = self.parse_statement();
+            if let Some(stmt) = stmt {
+                program.statements.push(stmt);
+            }
+            self.next_token();
+        }
+
+        program
+    }
+
+    fn parse_function_parameters(&mut self) -> Option<Vec<Identifier>> {
+        let mut identifiers = vec![];
+
+        if let Some(&Token::RPAREN) = self.lexer.peek() {
+            self.next_token();
+            return Some(identifiers);
+        }
+
+        self.next_token();
+        match &self.cur_token {
+            Token::IDENT(ident) => identifiers.push(Identifier(ident.clone())),
+            _ => return None,
+        }
+
+        while let Some(token) = self.lexer.peek() {
+            if *token != Token::COMMA {
+                break;
+            }
+            self.next_token();
+            self.next_token();
+            match &self.cur_token {
+                Token::IDENT(ident) => identifiers.push(Identifier(ident.clone())),
+                _ => return None,
+            }
+        }
+
+        if !self.expect_peek(Token::RPAREN) {
+            return None;
+        }
+
+        Some(identifiers)
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {

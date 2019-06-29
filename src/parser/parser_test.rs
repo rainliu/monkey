@@ -298,6 +298,88 @@ fn test_expression_ifelse() {
 }
 
 #[test]
+fn test_expression_function() {
+    let input = "fn(x,y) {x+y;}";
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+    assert_eq!(program.statements.len(), 1);
+
+    for stmt in &program.statements {
+        match stmt {
+            Statement::Expression(expr) => match expr {
+                Expression::Function(parameters, body) => {
+                    assert_eq!(parameters.len(), 2);
+                    assert_eq!(parameters[0], Identifier("x".to_string()));
+                    assert_eq!(parameters[1], Identifier("y".to_string()));
+                    assert_eq!(body.statements.len(), 1);
+                    if let Some(stmt) = body.statements.first() {
+                        match stmt {
+                            Statement::Expression(expr) => assert_eq!(
+                                is_expression_infix(
+                                    expr,
+                                    &Literal::Ident("x".to_string()),
+                                    &Infix::PLUS,
+                                    &Literal::Ident("y".to_string())
+                                ),
+                                true
+                            ),
+                            _ => assert!(false, "Statement is not Expression"),
+                        };
+                    } else {
+                        assert!(false, "no statement in body");
+                    }
+                }
+                _ => assert!(false, "Expression is not Function"),
+            },
+            _ => assert!(false, "Statement is not Expression"),
+        };
+    }
+}
+
+#[test]
+fn test_expression_function_parameters() {
+    let tests = vec![
+        ("fn() {};", vec![]),
+        ("fn(x) {};", vec![Identifier("x".to_string())]),
+        (
+            "fn(x,y,z) {x+y;}",
+            vec![
+                Identifier("x".to_string()),
+                Identifier("y".to_string()),
+                Identifier("z".to_string()),
+            ],
+        ),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+        for stmt in &program.statements {
+            match stmt {
+                Statement::Expression(expr) => match expr {
+                    Expression::Function(parameters, _body) => {
+                        assert_eq!(parameters.len(), tt.1.len());
+                        for (t, p) in tt.1.iter().zip(parameters.iter()) {
+                            assert_eq!(*t, *p);
+                        }
+                    }
+                    _ => assert!(false, "Expression is not Function"),
+                },
+                _ => assert!(false, "Statement is not Expression"),
+            };
+        }
+    }
+}
+
+#[test]
 fn test_parsing_prefix_expressions() {
     let prefix_tests = vec![
         ("!5;", "!", Literal::Int(5)),

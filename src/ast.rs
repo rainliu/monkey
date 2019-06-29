@@ -32,11 +32,8 @@ pub enum Expression {
     Boolean(Boolean),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
-    If(
-        Box<Expression>,
-        Box<BlockStatement>,
-        Option<Box<BlockStatement>>,
-    ),
+    If(Box<Expression>, BlockStatement, Option<BlockStatement>),
+    Function(Vec<Identifier>, BlockStatement),
 }
 
 impl fmt::Display for Expression {
@@ -53,6 +50,11 @@ impl fmt::Display for Expression {
                 } else {
                     format!("if{} {}", *condition, *consequence)
                 }
+            }
+            Expression::Function(parameters, body) => {
+                let params: Vec<String> =
+                    parameters.iter().map(|param| param.to_string()).collect();
+                format!("fn({}) {}", params.join(", "), *body)
             }
         };
         write!(f, "{}", s)
