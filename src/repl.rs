@@ -18,8 +18,9 @@ pub fn start<R: io::BufRead, W: io::Write>(mut reader: R, mut writer: W) -> io::
         let errors = p.errors();
         if errors.len() != 0 {
             for error in errors {
-                writer.write(format!("\t{}\t", error).as_bytes())?;
+                writer.write(format!("\t{}\t\n", error).as_bytes())?;
             }
+            continue;
         }
         writer.write(format!("{}\n", program).as_bytes())?;
     }
