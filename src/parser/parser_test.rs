@@ -189,6 +189,115 @@ fn test_expression_integer() {
 }
 
 #[test]
+fn test_expression_if() {
+    let input = "if (x<y) {x}";
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+    assert_eq!(program.statements.len(), 1);
+
+    for stmt in &program.statements {
+        match stmt {
+            Statement::Expression(expr) => match expr {
+                Expression::If(condition, consequence, alternative) => {
+                    assert_eq!(
+                        is_expression_infix(
+                            condition,
+                            &Literal::Ident("x".to_string()),
+                            &Infix::LT,
+                            &Literal::Ident("y".to_string())
+                        ),
+                        true
+                    );
+                    assert_eq!(consequence.statements.len(), 1);
+                    if let Some(stmt) = consequence.statements.first() {
+                        match stmt {
+                            Statement::Expression(expr) => assert_eq!(
+                                is_expression_literal(expr, &Literal::Ident("x".to_string())),
+                                true
+                            ),
+                            _ => assert!(false, "Statement is not Expression"),
+                        };
+
+                        assert!(alternative.is_none(), "alternative should be none");
+                    } else {
+                        assert!(false, "no statement in consequence");
+                    }
+                }
+                _ => assert!(false, "Expression is not If"),
+            },
+            _ => assert!(false, "Statement is not Expression"),
+        };
+    }
+}
+
+#[test]
+fn test_expression_ifelse() {
+    let input = "if (x<y) {x} else {y}";
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+    assert_eq!(program.statements.len(), 1);
+
+    for stmt in &program.statements {
+        match stmt {
+            Statement::Expression(expr) => match expr {
+                Expression::If(condition, consequence, alternative) => {
+                    assert_eq!(
+                        is_expression_infix(
+                            condition,
+                            &Literal::Ident("x".to_string()),
+                            &Infix::LT,
+                            &Literal::Ident("y".to_string())
+                        ),
+                        true
+                    );
+                    assert_eq!(consequence.statements.len(), 1);
+                    if let Some(stmt) = consequence.statements.first() {
+                        match stmt {
+                            Statement::Expression(expr) => assert_eq!(
+                                is_expression_literal(expr, &Literal::Ident("x".to_string())),
+                                true
+                            ),
+                            _ => assert!(false, "Statement is not Expression"),
+                        };
+
+                        if let Some(alternative) = alternative {
+                            if let Some(stmt) = alternative.statements.first() {
+                                match stmt {
+                                    Statement::Expression(expr) => assert_eq!(
+                                        is_expression_literal(
+                                            expr,
+                                            &Literal::Ident("y".to_string())
+                                        ),
+                                        true
+                                    ),
+                                    _ => assert!(false, "Statement is not Expression"),
+                                };
+                            } else {
+                                assert!(false, "no statement in alternative");
+                            }
+                        } else {
+                            assert!(false, "alternative should be not none");
+                        }
+                    } else {
+                        assert!(false, "no statement in consequence");
+                    }
+                }
+                _ => assert!(false, "Expression is not If"),
+            },
+            _ => assert!(false, "Statement is not Expression"),
+        };
+    }
+}
+
+#[test]
 fn test_parsing_prefix_expressions() {
     let prefix_tests = vec![
         ("!5;", "!", Literal::Int(5)),

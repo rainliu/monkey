@@ -23,6 +23,8 @@ impl fmt::Display for Statement {
     }
 }
 
+pub type BlockStatement = Program;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Ident(Identifier),
@@ -30,6 +32,11 @@ pub enum Expression {
     Boolean(Boolean),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
+    If(
+        Box<Expression>,
+        Box<BlockStatement>,
+        Option<Box<BlockStatement>>,
+    ),
 }
 
 impl fmt::Display for Expression {
@@ -40,6 +47,13 @@ impl fmt::Display for Expression {
             Expression::Boolean(boolean) => format!("{}", boolean),
             Expression::Prefix(prefix, right) => format!("({}{})", prefix, *right),
             Expression::Infix(left, infix, right) => format!("({} {} {})", *left, infix, *right),
+            Expression::If(condition, consequence, alternative) => {
+                if let Some(alternative) = alternative {
+                    format!("if{} {}else {}", *condition, *consequence, *alternative)
+                } else {
+                    format!("if{} {}", *condition, *consequence)
+                }
+            }
         };
         write!(f, "{}", s)
     }

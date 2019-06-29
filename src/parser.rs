@@ -59,6 +59,29 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn expect_peek(&mut self, expected: Token) -> bool {
+        match self.lexer.peek() {
+            Some(token) => {
+                if *token == expected {
+                    self.next_token();
+                    true
+                } else {
+                    self.errors.push(format!(
+                        "expected next token to be {:?}, got {:?} instead",
+                        expected, token,
+                    ));
+                    false
+                }
+            }
+            None => {
+                self.errors.push(format!(
+                    "expected next token to be LPAREN, got None instead"
+                ));
+                false
+            }
+        }
+    }
+
     pub fn errors(&self) -> &[String] {
         &self.errors
     }
@@ -71,6 +94,7 @@ impl<'a> Parser<'a> {
             Token::BANG | Token::MINUS => Some(Parser::parse_prefix),
             Token::TRUE | Token::FALSE => Some(Parser::parse_boolean),
             Token::LPAREN => Some(Parser::parse_parenthesis),
+            Token::IF => Some(Parser::parse_if),
             _ => None,
         }
     }
@@ -120,24 +144,56 @@ impl<'a> Parser<'a> {
 
         let expr = parser.parse_expression(Precedence::LOWEST);
 
-        match parser.lexer.peek() {
-            Some(&Token::RPAREN) => parser.next_token(),
-            Some(t) => {
-                parser.errors.push(format!(
-                    "expected next token to be RPAREN, got {:?} instead",
-                    t
-                ));
-                return None;
-            }
-            None => {
-                parser.errors.push(format!(
-                    "expected next token to be RPAREN, got None instead"
-                ));
-                return None;
-            }
-        };
+        if !parser.expect_peek(Token::RPAREN) {
+            return None;
+        }
 
         expr
+    }
+
+    fn parse_if(parser: &mut Parser) -> Option<Expression> {
+        if !parser.expect_peek(Token::LPAREN) {
+            return None;
+        }
+
+        parser.next_token();
+
+        let condition = parser.parse_expression(Precedence::LOWEST);
+        if condition.is_none() {
+            return None;
+        }
+
+        if !parser.expect_peek(Token::RPAREN) {
+            return None;
+        }
+
+        if !parser.expect_peek(Token::LBRACE) {
+            return None;
+        }
+
+        let consequence = parser.parse_statement_block();
+
+        let alternative = if let Some(token) = parser.lexer.peek() {
+            match token {
+                Token::ELSE => {
+                    parser.next_token();
+                    if !parser.expect_peek(Token::LBRACE) {
+                        return None;
+                    }
+
+                    Some(Box::new(parser.parse_statement_block()))
+                }
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        Some(Expression::If(
+            Box::new(condition.unwrap()),
+            Box::new(consequence),
+            alternative,
+        ))
     }
 
     fn parse_prefix(parser: &mut Parser) -> Option<Expression> {
@@ -193,6 +249,20 @@ impl<'a> Parser<'a> {
         program
     }
 
+    pub fn parse_statement_block(&mut self) -> BlockStatement {
+        let mut program = Program::new();
+
+        while self.cur_token != Token::RBRACE && self.cur_token != Token::EOF {
+            let stmt = self.parse_statement();
+            if let Some(stmt) = stmt {
+                program.statements.push(stmt);
+            }
+            self.next_token();
+        }
+
+        program
+    }
+
     fn parse_statement(&mut self) -> Option<Statement> {
         match self.cur_token {
             Token::LET => self.parse_statement_let(),
@@ -223,22 +293,9 @@ impl<'a> Parser<'a> {
             _ => return None,
         };
 
-        match self.lexer.peek() {
-            Some(&Token::ASSIGN) => self.next_token(),
-            Some(t) => {
-                self.errors.push(format!(
-                    "expected next token to be ASSIGN, got {:?} instead",
-                    t
-                ));
-                return None;
-            }
-            None => {
-                self.errors.push(format!(
-                    "expected next token to be ASSIGN, got None instead"
-                ));
-                return None;
-            }
-        };
+        if !self.expect_peek(Token::ASSIGN) {
+            return None;
+        }
 
         //TODO:
         while self.cur_token != Token::SEMICOLON && self.cur_token != Token::EOF {
