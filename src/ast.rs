@@ -27,6 +27,7 @@ impl fmt::Display for Statement {
 pub enum Expression {
     Ident(Identifier),
     Int(Integer),
+    Boolean(Boolean),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
 }
@@ -36,6 +37,7 @@ impl fmt::Display for Expression {
         let s = match self {
             Expression::Ident(ident) => format!("{}", ident),
             Expression::Int(int) => format!("{}", int),
+            Expression::Boolean(boolean) => format!("{}", boolean),
             Expression::Prefix(prefix, right) => format!("({}{})", prefix, *right),
             Expression::Infix(left, infix, right) => format!("({} {} {})", *left, infix, *right),
         };
@@ -131,5 +133,14 @@ impl fmt::Display for Infix {
                 Infix::NEQ => "!=",
             }
         )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Boolean(pub bool);
+
+impl fmt::Display for Boolean {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }

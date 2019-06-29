@@ -32,6 +32,63 @@ fn is_expression_integer(expr: &Expression, value: i64) -> bool {
     }
 }
 
+fn is_expression_identifier(expr: &Expression, value: &str) -> bool {
+    match expr {
+        Expression::Ident(ident) => {
+            assert_eq!(ident.0, value);
+            true
+        }
+        _ => false,
+    }
+}
+
+fn is_expression_boolean(expr: &Expression, value: bool) -> bool {
+    match expr {
+        Expression::Boolean(boolean) => {
+            assert_eq!(boolean.0, value);
+            true
+        }
+        _ => false,
+    }
+}
+
+fn is_expression_infix(
+    expr: &Expression,
+    left_expected: &Literal,
+    infix_expected: &Infix,
+    right_expected: &Literal,
+) -> bool {
+    match expr {
+        Expression::Infix(left, infix, right) => {
+            if !is_expression_literal(left, left_expected) {
+                return false;
+            }
+            assert_eq!(*infix, *infix_expected);
+
+            if !is_expression_literal(right, right_expected) {
+                return false;
+            }
+
+            true
+        }
+        _ => false,
+    }
+}
+
+enum Literal {
+    Int(i64),
+    Ident(String),
+    Boolean(bool),
+}
+
+fn is_expression_literal(expr: &Expression, expected: &Literal) -> bool {
+    match expected {
+        Literal::Int(int) => is_expression_integer(expr, *int),
+        Literal::Ident(ident) => is_expression_identifier(expr, ident),
+        Literal::Boolean(boolean) => is_expression_boolean(expr, *boolean),
+    }
+}
+
 #[test]
 fn test_statement_let() {
     let input = "let x = 5;
@@ -133,7 +190,12 @@ fn test_expression_integer() {
 
 #[test]
 fn test_parsing_prefix_expressions() {
-    let prefix_tests = vec![("!5;", "!", 5), ("-15", "-", 15)];
+    let prefix_tests = vec![
+        ("!5;", "!", Literal::Int(5)),
+        ("-15", "-", Literal::Int(15)),
+        ("!true", "!", Literal::Boolean(true)),
+        ("!false", "!", Literal::Boolean(false)),
+    ];
 
     for tt in prefix_tests {
         let l = Lexer::new(tt.0);
@@ -148,7 +210,7 @@ fn test_parsing_prefix_expressions() {
                 Statement::Expression(expr) => match expr {
                     Expression::Prefix(prefix, right) => {
                         assert_eq!(prefix.to_string(), tt.1);
-                        assert_eq!(is_expression_integer(right, tt.2), true);
+                        assert_eq!(is_expression_literal(right, &tt.2), true);
                     }
                     _ => assert!(false, "Expression is not Prefix"),
                 },
@@ -161,14 +223,32 @@ fn test_parsing_prefix_expressions() {
 #[test]
 fn test_parsing_infix_expressions() {
     let infix_tests = vec![
-        ("5+5;", 5, "+", 5),
-        ("5-5;", 5, "-", 5),
-        ("5*5;", 5, "*", 5),
-        ("5/5;", 5, "/", 5),
-        ("5>5;", 5, ">", 5),
-        ("5<5;", 5, "<", 5),
-        ("5==5;", 5, "==", 5),
-        ("5!=5;", 5, "!=", 5),
+        ("5+5;", Literal::Int(5), "+", Literal::Int(5)),
+        ("5-5;", Literal::Int(5), "-", Literal::Int(5)),
+        ("5*5;", Literal::Int(5), "*", Literal::Int(5)),
+        ("5/5;", Literal::Int(5), "/", Literal::Int(5)),
+        ("5>5;", Literal::Int(5), ">", Literal::Int(5)),
+        ("5<5;", Literal::Int(5), "<", Literal::Int(5)),
+        ("5==5;", Literal::Int(5), "==", Literal::Int(5)),
+        ("5!=5;", Literal::Int(5), "!=", Literal::Int(5)),
+        (
+            "true==true",
+            Literal::Boolean(true),
+            "==",
+            Literal::Boolean(true),
+        ),
+        (
+            "true!=false",
+            Literal::Boolean(true),
+            "!=",
+            Literal::Boolean(false),
+        ),
+        (
+            "false==false",
+            Literal::Boolean(false),
+            "==",
+            Literal::Boolean(false),
+        ),
     ];
 
     for tt in infix_tests {
@@ -183,9 +263,9 @@ fn test_parsing_infix_expressions() {
             match stmt {
                 Statement::Expression(expr) => match expr {
                     Expression::Infix(left, infix, right) => {
-                        assert_eq!(is_expression_integer(left, tt.1), true);
+                        assert_eq!(is_expression_literal(left, &tt.1), true);
                         assert_eq!(infix.to_string(), tt.2);
-                        assert_eq!(is_expression_integer(right, tt.3), true);
+                        assert_eq!(is_expression_literal(right, &tt.3), true);
                     }
                     _ => assert!(false, "Expression is not Infix"),
                 },
@@ -210,6 +290,10 @@ fn test_operator_precedence_parsing() {
         ("5>4==3<4", "((5 > 4) == (3 < 4));"),
         ("5>4!=3<4", "((5 > 4) != (3 < 4));"),
         ("3+4*5==3*1+4*5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));"),
+        ("true", "true;"),
+        ("false", "false;"),
+        ("3>5==false", "((3 > 5) == false);"),
+        ("3<5==true", "((3 < 5) == true);"),
     ];
 
     for tt in tests {

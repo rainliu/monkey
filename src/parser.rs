@@ -69,6 +69,7 @@ impl<'a> Parser<'a> {
             Token::IDENT(_) => Some(Parser::parse_indentifier),
             Token::INT(_) => Some(Parser::parse_integer),
             Token::BANG | Token::MINUS => Some(Parser::parse_prefix),
+            Token::TRUE | Token::FALSE => Some(Parser::parse_boolean),
             _ => None,
         }
     }
@@ -101,6 +102,14 @@ impl<'a> Parser<'a> {
                 Ok(i) => Some(Expression::Int(Integer(i))),
                 _ => None,
             },
+            _ => None,
+        }
+    }
+
+    fn parse_boolean(parser: &mut Parser) -> Option<Expression> {
+        match &parser.cur_token {
+            Token::TRUE => Some(Expression::Boolean(Boolean(true))),
+            Token::FALSE => Some(Expression::Boolean(Boolean(false))),
             _ => None,
         }
     }
