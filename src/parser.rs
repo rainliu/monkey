@@ -70,6 +70,7 @@ impl<'a> Parser<'a> {
             Token::INT(_) => Some(Parser::parse_integer),
             Token::BANG | Token::MINUS => Some(Parser::parse_prefix),
             Token::TRUE | Token::FALSE => Some(Parser::parse_boolean),
+            Token::LPAREN => Some(Parser::parse_parenthesis),
             _ => None,
         }
     }
@@ -112,6 +113,31 @@ impl<'a> Parser<'a> {
             Token::FALSE => Some(Expression::Boolean(Boolean(false))),
             _ => None,
         }
+    }
+
+    fn parse_parenthesis(parser: &mut Parser) -> Option<Expression> {
+        parser.next_token();
+
+        let expr = parser.parse_expression(Precedence::LOWEST);
+
+        match parser.lexer.peek() {
+            Some(&Token::RPAREN) => parser.next_token(),
+            Some(t) => {
+                parser.errors.push(format!(
+                    "expected next token to be RPAREN, got {:?} instead",
+                    t
+                ));
+                return None;
+            }
+            None => {
+                parser.errors.push(format!(
+                    "expected next token to be RPAREN, got None instead"
+                ));
+                return None;
+            }
+        };
+
+        expr
     }
 
     fn parse_prefix(parser: &mut Parser) -> Option<Expression> {
