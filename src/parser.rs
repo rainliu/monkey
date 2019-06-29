@@ -61,6 +61,19 @@ impl<'a> Parser<'a> {
 
     fn expect_peek(&mut self, expected: Token) -> bool {
         match self.lexer.peek() {
+            Some(&Token::IDENT(_)) => match expected {
+                Token::IDENT(_) => {
+                    self.next_token();
+                    true
+                }
+                _ => {
+                    self.errors.push(format!(
+                        "expected next token to be {:?}, got IDENT instead",
+                        expected,
+                    ));
+                    false
+                }
+            },
             Some(token) => {
                 if *token == expected {
                     self.next_token();
@@ -272,21 +285,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_statement_let(&mut self) -> Option<Statement> {
-        match self.lexer.peek() {
-            Some(&Token::IDENT(_)) => self.next_token(),
-            Some(t) => {
-                self.errors.push(format!(
-                    "expected next token to be IDENT, got {:?} instead",
-                    t
-                ));
-                return None;
-            }
-            None => {
-                self.errors
-                    .push(format!("expected next token to be IDENT, got None instead"));
-                return None;
-            }
-        };
+        if !self.expect_peek(Token::IDENT("unknown".to_string())) {
+            return None;
+        }
 
         let ident = match &self.cur_token {
             Token::IDENT(ident) => ident.to_string(),
