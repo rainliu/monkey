@@ -21,6 +21,6 @@ pub fn start<R: io::BufRead, W: io::Write>(mut reader: R, mut writer: W) -> io::
                 writer.write(format!("\t{}\t", error).as_bytes())?;
             }
         }
-        writer.write(format!("{}\n",program).as_bytes())?;
+        writer.write(format!("{}\n", program).as_bytes())?;
     }
 }
