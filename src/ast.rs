@@ -15,11 +15,11 @@ pub enum Statement {
 impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {
-            Statement::Let(stmt, expr) => format!("let {} = {}", stmt, expr),
-            Statement::Return(ret) => format!("return {}", ret),
+            Statement::Let(stmt, expr) => format!("let {} = {};", stmt, expr),
+            Statement::Return(ret) => format!("return {};", ret),
             Statement::Expression(exp) => format!("{}", exp),
         };
-        write!(f, "{};", s)
+        write!(f, "{}", s)
     }
 }
 
