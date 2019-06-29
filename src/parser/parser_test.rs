@@ -110,6 +110,33 @@ fn test_statement_let() {
 }
 
 #[test]
+fn test_statement_lets() {
+    let tests = vec![
+        ("let x = 5;", "x", Literal::Int(5)),
+        ("let y = true;", "y", Literal::Boolean(true)),
+        ("let foobar = y", "foobar", Literal::Ident("y".to_string())),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+        assert_eq!(program.statements.len(), 1);
+
+        let stmt = &program.statements[0];
+        match stmt {
+            Statement::Let(ident, expr) => {
+                assert_eq!(ident.0, tt.1);
+                assert_eq!(is_expression_literal(expr, &tt.2), true);
+            }
+            _ => assert!(false, "Statement is not Let"),
+        }
+    }
+}
+
+#[test]
 fn test_statement_let_errors() {
     let input = "let x 5;
     let  = 10;
@@ -542,6 +569,15 @@ fn test_operator_precedence_parsing() {
         ("2/(5+5)", "(2 / (5 + 5))"),
         ("-(5+5)", "(-(5 + 5))"),
         ("!(true==true)", "(!(true == true))"),
+        ("a + add(b *c) +d", "((a + add((b * c))) + d)"),
+        (
+            "add(a, b, 1, 2*3, 4 +5, add(6, 7*8))",
+            "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+        ),
+        (
+            "add(a + b + c * d/f+g)",
+            "add((((a + b) + ((c * d) / f)) + g))",
+        ),
     ];
 
     for tt in tests {

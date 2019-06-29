@@ -314,28 +314,31 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        //TODO:
-        while self.cur_token != Token::SEMICOLON && self.cur_token != Token::EOF {
-            self.next_token();
-        }
+        self.next_token();
 
-        Some(Statement::Let(
-            Identifier(ident.clone()),
-            Expression::Ident(Identifier(ident)),
-        ))
+        if let Some(expr) = self.parse_expression(Precedence::LOWEST) {
+            if let Some(&Token::SEMICOLON) = self.lexer.peek() {
+                self.next_token();
+            }
+
+            Some(Statement::Let(Identifier(ident), expr))
+        } else {
+            None
+        }
     }
 
     fn parse_statement_return(&mut self) -> Option<Statement> {
         self.next_token();
 
-        //TODO:
-        while self.cur_token != Token::SEMICOLON && self.cur_token != Token::EOF {
-            self.next_token();
-        }
+        if let Some(expr) = self.parse_expression(Precedence::LOWEST) {
+            if let Some(&Token::SEMICOLON) = self.lexer.peek() {
+                self.next_token();
+            }
 
-        Some(Statement::Return(Expression::Ident(Identifier(
-            "TODO".to_string(),
-        ))))
+            Some(Statement::Return(expr))
+        } else {
+            None
+        }
     }
 
     fn parse_statement_expression(&mut self) -> Option<Statement> {
