@@ -1,5 +1,3 @@
-//use crate::token::*;
-
 use std::fmt;
 
 #[cfg(test)]
@@ -34,6 +32,7 @@ pub enum Expression {
     Infix(Box<Expression>, Infix, Box<Expression>),
     If(Box<Expression>, BlockStatement, Option<BlockStatement>),
     Function(Vec<Identifier>, BlockStatement),
+    Call(Box<Expression>, Vec<Expression>),
 }
 
 impl fmt::Display for Expression {
@@ -55,6 +54,10 @@ impl fmt::Display for Expression {
                 let params: Vec<String> =
                     parameters.iter().map(|param| param.to_string()).collect();
                 format!("fn({}) {}", params.join(", "), *body)
+            }
+            Expression::Call(function, arguments) => {
+                let args: Vec<String> = arguments.iter().map(|arg| arg.to_string()).collect();
+                format!("{}({})", *function, args.join(", "))
             }
         };
         write!(f, "{}", s)

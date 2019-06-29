@@ -28,6 +28,7 @@ fn token2precedence(token: &Token) -> Precedence {
         Token::LT | Token::GT => Precedence::LESSGREATER,
         Token::PLUS | Token::MINUS => Precedence::SUM,
         Token::SLASH | Token::ASTERISK => Precedence::PRODUCT,
+        Token::LPAREN => Precedence::CALL,
         _ => Precedence::LOWEST,
     }
 }
@@ -138,6 +139,7 @@ impl<'a> Parser<'a> {
             | Token::MINUS
             | Token::SLASH
             | Token::ASTERISK => Some(Parser::parse_infix),
+            Token::LPAREN => Some(Parser::parse_call),
             _ => None,
         }
     }
@@ -241,6 +243,14 @@ impl<'a> Parser<'a> {
         let body = parser.parse_statement_block();
 
         Some(Expression::Function(params.unwrap(), body))
+    }
+
+    fn parse_call(parser: &mut Parser, left: Expression) -> Option<Expression> {
+        if let Some(args) = parser.parse_call_arguments() {
+            Some(Expression::Call(Box::new(left), args))
+        } else {
+            None
+        }
     }
 
     fn parse_prefix(parser: &mut Parser) -> Option<Expression> {
@@ -389,6 +399,41 @@ impl<'a> Parser<'a> {
         }
 
         Some(identifiers)
+    }
+
+    fn parse_call_arguments(&mut self) -> Option<Vec<Expression>> {
+        let mut args = vec![];
+
+        if let Some(&Token::RPAREN) = self.lexer.peek() {
+            self.next_token();
+            return Some(args);
+        }
+
+        self.next_token();
+        if let Some(arg) = self.parse_expression(Precedence::LOWEST) {
+            args.push(arg);
+        } else {
+            return None;
+        }
+
+        while let Some(token) = self.lexer.peek() {
+            if *token != Token::COMMA {
+                break;
+            }
+            self.next_token();
+            self.next_token();
+            if let Some(arg) = self.parse_expression(Precedence::LOWEST) {
+                args.push(arg);
+            } else {
+                return None;
+            }
+        }
+
+        if !self.expect_peek(Token::RPAREN) {
+            return None;
+        }
+
+        Some(args)
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {

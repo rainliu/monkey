@@ -380,6 +380,58 @@ fn test_expression_function_parameters() {
 }
 
 #[test]
+fn test_expression_call() {
+    let input = "add(1, 2*3, 4+5);";
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+    assert_eq!(program.statements.len(), 1);
+
+    for stmt in &program.statements {
+        match stmt {
+            Statement::Expression(expr) => match expr {
+                Expression::Call(function, arguments) => {
+                    assert_eq!(
+                        is_expression_literal(function, &Literal::Ident("add".to_string())),
+                        true
+                    );
+
+                    assert_eq!(arguments.len(), 3);
+
+                    assert_eq!(
+                        is_expression_literal(&arguments[0], &Literal::Int(1),),
+                        true
+                    );
+                    assert_eq!(
+                        is_expression_infix(
+                            &arguments[1],
+                            &Literal::Int(2),
+                            &Infix::ASTERISK,
+                            &Literal::Int(3)
+                        ),
+                        true
+                    );
+                    assert_eq!(
+                        is_expression_infix(
+                            &arguments[2],
+                            &Literal::Int(4),
+                            &Infix::PLUS,
+                            &Literal::Int(5)
+                        ),
+                        true
+                    );
+                }
+                _ => assert!(false, "Expression is not Function"),
+            },
+            _ => assert!(false, "Statement is not Expression"),
+        };
+    }
+}
+
+#[test]
 fn test_parsing_prefix_expressions() {
     let prefix_tests = vec![
         ("!5;", "!", Literal::Int(5)),
