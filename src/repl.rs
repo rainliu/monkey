@@ -1,5 +1,6 @@
 use crate::lexer::*;
 use crate::parser::*;
+use crate::evaluator::*;
 
 use std::io;
 
@@ -22,6 +23,8 @@ pub fn start<R: io::BufRead, W: io::Write>(mut reader: R, mut writer: W) -> io::
             }
             continue;
         }
-        writer.write(format!("{}\n", program).as_bytes())?;
+
+        let evaluated = eval(&program);
+        writer.write(format!("{}\n", evaluated).as_bytes())?;
     }
 }
