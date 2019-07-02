@@ -2,27 +2,35 @@ use super::*;
 use crate::lexer::*;
 use crate::parser::*;
 
-fn is_object_integer(obj: &Object, expected: i64) -> bool {
+fn is_object_integer(obj: &Object, test: &str, expected: i64) -> bool {
     match obj {
         Object::Int(int) => {
             assert_eq!(*int, expected);
             true
         }
         _ => {
-            assert!(false, "Expected Integer, but got {}", obj);
+            assert!(
+                false,
+                "Eval {}, expected Integer({}), but got {}",
+                test, expected, obj
+            );
             false
         }
     }
 }
 
-fn is_object_boolean(obj: &Object, expected: bool) -> bool {
+fn is_object_boolean(obj: &Object, test: &str, expected: bool) -> bool {
     match obj {
         Object::Boolean(boolean) => {
             assert_eq!(*boolean, expected);
             true
         }
         _ => {
-            assert!(false, "Expected Boolean, but got {}", obj);
+            assert!(
+                false,
+                "Eval {}, expected Boolean({}), but got {}",
+                test, expected, obj
+            );
             false
         }
     }
@@ -35,6 +43,15 @@ fn test_eval_expression_integer() {
         ("10", 10),
         ("-5", -5),
         ("-10", -10),
+        ("5+5+5+5-10", 10),
+        ("2*2*2*2*2", 32),
+        ("-50+100+-50", 0),
+        ("5*2+10", 20),
+        ("20+2*-10", 0),
+        ("2*(5+10)", 30),
+        ("3*3*3+10", 37),
+        ("3*(3*3)+10", 37),
+        ("(5+10*2+15/3)*2+-10", 50),
     ];
 
     for tt in tests {
@@ -43,13 +60,33 @@ fn test_eval_expression_integer() {
 
         let program = p.parse_program();
         let evaluated = eval(&program);
-        assert_eq!(is_object_integer(&evaluated, tt.1), true);
+        assert_eq!(is_object_integer(&evaluated, tt.0, tt.1), true);
     }
 }
 
 #[test]
 fn test_eval_expression_boolean() {
-    let tests = vec![("true", true), ("false", false)];
+    let tests = vec![
+        ("true", true),
+        ("false", false),
+        ("1<2", true),
+        ("1>2", false),
+        ("1<1", false),
+        ("1>1", false),
+        ("1==1", true),
+        ("1!=1", false),
+        ("1==2", false),
+        ("1!=2", true),
+        ("true==true", true),
+        ("false==false", true),
+        ("true==false", false),
+        ("true!=false", true),
+        ("false!=true", true),
+        ("(1<2)==true", true),
+        ("(1<2)==false", false),
+        ("(1>2)==true", false),
+        ("(1>2)==false", true),
+    ];
 
     for tt in tests {
         let l = Lexer::new(tt.0);
@@ -57,7 +94,7 @@ fn test_eval_expression_boolean() {
 
         let program = p.parse_program();
         let evaluated = eval(&program);
-        assert_eq!(is_object_boolean(&evaluated, tt.1), true);
+        assert_eq!(is_object_boolean(&evaluated, tt.0, tt.1), true);
     }
 }
 
@@ -78,7 +115,6 @@ fn test_eval_operator_bang() {
 
         let program = p.parse_program();
         let evaluated = eval(&program);
-        assert_eq!(is_object_boolean(&evaluated, tt.1), true);
+        assert_eq!(is_object_boolean(&evaluated, tt.0, tt.1), true);
     }
 }
-
