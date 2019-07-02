@@ -47,14 +47,14 @@ fn eval_statement(stmt: &Statement) -> Object {
 
 fn eval_expression(expr: &Expression) -> Object {
     match expr {
-        //Expression::Ident(Identifier),
+        //Expression::Ident(ident),
         Expression::Int(int) => Object::Int(int.0),
-        /*Expression::Boolean(Boolean),
-        Expression::Prefix(Prefix, Box<Expression>),
-        Expression::Infix(Box<Expression>, Infix, Box<Expression>),
-        Expression::If(Box<Expression>, BlockStatement, Option<BlockStatement>),
-        Expression::Function(Vec<Identifier>, BlockStatement),
-        Expression::Call(Box<Expression>, Vec<Expression>),*/
+        Expression::Boolean(boolean) => Object::Boolean(boolean.0),
+        //Expression::Prefix(Prefix, Box<Expression>),
+        //Expression::Infix(Box<Expression>, Infix, Box<Expression>),
+        //Expression::If(Box<Expression>, BlockStatement, Option<BlockStatement>),
+        //Expression::Function(Vec<Identifier>, BlockStatement),
+        //Expression::Call(Box<Expression>, Vec<Expression>),*/
         _ => Object::Null,
     }
 }
