@@ -50,11 +50,36 @@ fn eval_expression(expr: &Expression) -> Object {
         //Expression::Ident(ident),
         Expression::Int(int) => Object::Int(int.0),
         Expression::Boolean(boolean) => Object::Boolean(boolean.0),
-        //Expression::Prefix(Prefix, Box<Expression>),
+        Expression::Prefix(prefix, expr) => {
+            let right = eval_expression(expr);
+            eval_prefix_expression(prefix, right)
+        }
         //Expression::Infix(Box<Expression>, Infix, Box<Expression>),
         //Expression::If(Box<Expression>, BlockStatement, Option<BlockStatement>),
         //Expression::Function(Vec<Identifier>, BlockStatement),
         //Expression::Call(Box<Expression>, Vec<Expression>),*/
+        _ => Object::Null,
+    }
+}
+
+fn eval_prefix_expression(prefix: &Prefix, right: Object) -> Object {
+    match prefix {
+        &Prefix::BANG => eval_bang_operator_expression(right),
+        &Prefix::MINUS => eval_minus_operator_expression(right),
+    }
+}
+
+fn eval_bang_operator_expression(right: Object) -> Object {
+    match right {
+        Object::Boolean(boolean) => Object::Boolean(!boolean),
+        Object::Null => Object::Boolean(true),
+        _ => Object::Boolean(false),
+    }
+}
+
+fn eval_minus_operator_expression(right: Object) -> Object {
+    match right {
+        Object::Int(int) => Object::Int(-int),
         _ => Object::Null,
     }
 }

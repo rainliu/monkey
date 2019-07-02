@@ -30,7 +30,12 @@ fn is_object_boolean(obj: &Object, expected: bool) -> bool {
 
 #[test]
 fn test_eval_expression_integer() {
-    let tests = vec![("5", 5), ("10", 10)];
+    let tests = vec![
+        ("5", 5),
+        ("10", 10),
+        ("-5", -5),
+        ("-10", -10),
+    ];
 
     for tt in tests {
         let l = Lexer::new(tt.0);
@@ -55,3 +60,25 @@ fn test_eval_expression_boolean() {
         assert_eq!(is_object_boolean(&evaluated, tt.1), true);
     }
 }
+
+#[test]
+fn test_eval_operator_bang() {
+    let tests = vec![
+        ("!true", false),
+        ("!false", true),
+        ("!5", false),
+        ("!!true", true),
+        ("!!false", false),
+        ("!!5", true),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let evaluated = eval(&program);
+        assert_eq!(is_object_boolean(&evaluated, tt.1), true);
+    }
+}
+
