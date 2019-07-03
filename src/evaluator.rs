@@ -9,6 +9,7 @@ pub enum Object {
     Null,
     Int(i64),
     Boolean(bool),
+    Return(Box<Object>),
 }
 
 impl fmt::Display for Object {
@@ -17,6 +18,7 @@ impl fmt::Display for Object {
             Object::Null => "null".to_string(),
             Object::Int(int) => format!("{}", int),
             Object::Boolean(boolean) => format!("{}", boolean),
+            Object::Return(obj) => format!("{}", obj),
         };
         write!(f, "{}", s)
     }
@@ -38,7 +40,27 @@ fn eval_statements(stmts: &[Statement]) -> Object {
     let mut result = Object::Null;
 
     for stmt in stmts {
-        result = eval_statement(stmt)
+        result = eval_statement(stmt);
+
+        match result {
+            Object::Return(obj) => return *obj,
+            _ => {}
+        };
+    }
+
+    result
+}
+
+fn eval_block_statements(stmts: &[Statement]) -> Object {
+    let mut result = Object::Null;
+
+    for stmt in stmts {
+        result = eval_statement(stmt);
+
+        match result {
+            Object::Return(_) => return result,
+            _ => {}
+        };
     }
 
     result
@@ -47,7 +69,7 @@ fn eval_statements(stmts: &[Statement]) -> Object {
 fn eval_statement(stmt: &Statement) -> Object {
     match stmt {
         //Statement::Let(Identifier, Expression),
-        //Statement::Return(Expression),
+        Statement::Return(expr) => Object::Return(Box::new(eval_expression(expr))),
         Statement::Expression(expr) => eval_expression(expr),
         _ => Object::Null,
     }
@@ -70,9 +92,9 @@ fn eval_expression(expr: &Expression) -> Object {
         Expression::If(condition, consequence, alternative) => {
             let condition = eval_expression(condition);
             if is_truthy(&condition) {
-                eval_statements(&consequence.statements)
+                eval_block_statements(&consequence.statements)
             } else if let Some(alternative) = alternative {
-                eval_statements(&alternative.statements)
+                eval_block_statements(&alternative.statements)
             } else {
                 Object::Null
             }

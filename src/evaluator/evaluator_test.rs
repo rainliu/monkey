@@ -5,7 +5,13 @@ use crate::parser::*;
 fn is_object_integer(obj: &Object, test: &str, expected: i64) -> bool {
     match obj {
         Object::Int(int) => {
-            assert_eq!(*int, expected);
+            assert!(
+                *int == expected,
+                "Eval {}, expected Integer({}), but got {}",
+                test,
+                expected,
+                obj
+            );
             true
         }
         _ => {
@@ -22,7 +28,13 @@ fn is_object_integer(obj: &Object, test: &str, expected: i64) -> bool {
 fn is_object_boolean(obj: &Object, test: &str, expected: bool) -> bool {
     match obj {
         Object::Boolean(boolean) => {
-            assert_eq!(*boolean, expected);
+            assert!(
+                *boolean == expected,
+                "Eval {}, expected Boolean({}), but got {}",
+                test,
+                expected,
+                obj
+            );
             true
         }
         _ => {
@@ -137,10 +149,30 @@ fn test_eval_expression_ifelse() {
 
         let program = p.parse_program();
         let evaluated = eval(&program);
-        if let Some(expected) = tt.1{
-           assert_eq!(is_object_integer(&evaluated, tt.0, expected), true) ;
-        }else {
-           assert_eq!(evaluated, Object::Null);
+        if let Some(expected) = tt.1 {
+            assert_eq!(is_object_integer(&evaluated, tt.0, expected), true);
+        } else {
+            assert_eq!(evaluated, Object::Null);
         }
+    }
+}
+
+#[test]
+fn test_eval_statement_return() {
+    let tests = vec![
+        ("return 10;", 10),
+        ("return 10; 9;", 10),
+        ("return 2*5; 9;", 10),
+        ("9; return 2*5; 9;", 10),
+        ("if(10>1) { if(10>1) {return 10;} return 1; }", 10),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let evaluated = eval(&program);
+        assert_eq!(is_object_integer(&evaluated, tt.0, tt.1), true);
     }
 }
