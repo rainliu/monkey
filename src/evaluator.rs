@@ -26,6 +26,14 @@ pub fn eval(program: &Program) -> Object {
     eval_statements(&program.statements)
 }
 
+fn is_truthy(obj: &Object) -> bool {
+    match obj {
+        Object::Null => false,
+        Object::Boolean(boolean) => *boolean,
+        _ => true,
+    }
+}
+
 fn eval_statements(stmts: &[Statement]) -> Object {
     let mut result = Object::Null;
 
@@ -59,7 +67,16 @@ fn eval_expression(expr: &Expression) -> Object {
             let right = eval_expression(right);
             eval_infix_expression(&left, infix, &right)
         }
-        //Expression::If(Box<Expression>, BlockStatement, Option<BlockStatement>),
+        Expression::If(condition, consequence, alternative) => {
+            let condition = eval_expression(condition);
+            if is_truthy(&condition) {
+                eval_statements(&consequence.statements)
+            } else if let Some(alternative) = alternative {
+                eval_statements(&alternative.statements)
+            } else {
+                Object::Null
+            }
+        }
         //Expression::Function(Vec<Identifier>, BlockStatement),
         //Expression::Call(Box<Expression>, Vec<Expression>),*/
         _ => Object::Null,

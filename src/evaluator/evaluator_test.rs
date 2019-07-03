@@ -118,3 +118,29 @@ fn test_eval_operator_bang() {
         assert_eq!(is_object_boolean(&evaluated, tt.0, tt.1), true);
     }
 }
+
+#[test]
+fn test_eval_expression_ifelse() {
+    let tests = vec![
+        ("if(true) {10}", Some(10)),
+        ("if(false) {10}", None),
+        ("if(1) {10}", Some(10)),
+        ("if(1<2) {10}", Some(10)),
+        ("if(1>2) {10}", None),
+        ("if(1>2) {10} else {20}", Some(20)),
+        ("if(1<2) {10} else {20}", Some(10)),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let evaluated = eval(&program);
+        if let Some(expected) = tt.1{
+           assert_eq!(is_object_integer(&evaluated, tt.0, expected), true) ;
+        }else {
+           assert_eq!(evaluated, Object::Null);
+        }
+    }
+}
