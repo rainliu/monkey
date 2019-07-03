@@ -10,6 +10,7 @@ pub enum Object {
     Int(i64),
     Boolean(bool),
     Return(Box<Object>),
+    Error(String),
 }
 
 impl fmt::Display for Object {
@@ -19,6 +20,7 @@ impl fmt::Display for Object {
             Object::Int(int) => format!("{}", int),
             Object::Boolean(boolean) => format!("{}", boolean),
             Object::Return(obj) => format!("{}", obj),
+            Object::Error(msg) => format!("{}", msg),
         };
         write!(f, "{}", s)
     }
@@ -36,6 +38,13 @@ fn is_truthy(obj: &Object) -> bool {
     }
 }
 
+fn is_error(obj: &Object) -> bool {
+    match obj {
+        Object::Error(_) => true,
+        _ => false,
+    }
+}
+
 fn eval_statements(stmts: &[Statement]) -> Object {
     let mut result = Object::Null;
 
@@ -44,6 +53,7 @@ fn eval_statements(stmts: &[Statement]) -> Object {
 
         match result {
             Object::Return(obj) => return *obj,
+            Object::Error(_) => return result,
             _ => {}
         };
     }
@@ -58,7 +68,7 @@ fn eval_block_statements(stmts: &[Statement]) -> Object {
         result = eval_statement(stmt);
 
         match result {
-            Object::Return(_) => return result,
+            Object::Return(_) | Object::Error(_) => return result,
             _ => {}
         };
     }
@@ -69,7 +79,13 @@ fn eval_block_statements(stmts: &[Statement]) -> Object {
 fn eval_statement(stmt: &Statement) -> Object {
     match stmt {
         //Statement::Let(Identifier, Expression),
-        Statement::Return(expr) => Object::Return(Box::new(eval_expression(expr))),
+        Statement::Return(expr) => {
+            let obj = eval_expression(expr);
+            if is_error(&obj) {
+                return obj;
+            }
+            Object::Return(Box::new(obj))
+        }
         Statement::Expression(expr) => eval_expression(expr),
         _ => Object::Null,
     }
@@ -82,15 +98,27 @@ fn eval_expression(expr: &Expression) -> Object {
         Expression::Boolean(boolean) => Object::Boolean(boolean.0),
         Expression::Prefix(prefix, right) => {
             let right = eval_expression(right);
+            if is_error(&right) {
+                return right;
+            }
             eval_prefix_expression(prefix, &right)
         }
         Expression::Infix(left, infix, right) => {
             let left = eval_expression(left);
+            if is_error(&left) {
+                return left;
+            }
             let right = eval_expression(right);
+            if is_error(&right) {
+                return right;
+            }
             eval_infix_expression(&left, infix, &right)
         }
         Expression::If(condition, consequence, alternative) => {
             let condition = eval_expression(condition);
+            if is_error(&condition) {
+                return condition;
+            }
             if is_truthy(&condition) {
                 eval_block_statements(&consequence.statements)
             } else if let Some(alternative) = alternative {
@@ -123,7 +151,7 @@ fn eval_bang_operator_expression(right: &Object) -> Object {
 fn eval_minus_operator_expression(right: &Object) -> Object {
     match right {
         Object::Int(int) => Object::Int(-*int),
-        _ => Object::Null,
+        _ => Object::Error(format!("illegal operator: -{}", right)),
     }
 }
 
@@ -134,7 +162,7 @@ fn eval_infix_expression(left: &Object, infix: &Infix, right: &Object) -> Object
         }
         (_, &Infix::EQ, _) => Object::Boolean(*left == *right),
         (_, &Infix::NEQ, _) => Object::Boolean(*left != *right),
-        _ => Object::Null,
+        _ => Object::Error(format!("illegal operator: {} {} {}", left, infix, right)),
     }
 }
 

@@ -176,3 +176,41 @@ fn test_eval_statement_return() {
         assert_eq!(is_object_integer(&evaluated, tt.0, tt.1), true);
     }
 }
+
+#[test]
+fn test_error_handling() {
+    let tests = vec![
+        ("-true", "illegal operator: -true"),
+        ("5+true;", "illegal operator: 5 + true"),
+        ("5+true; 5;", "illegal operator: 5 + true"),
+        ("true + false;", "illegal operator: true + false"),
+        ("5; true+false; 5}", "illegal operator: true + false"),
+        ("if (10>1) {true+false;}", "illegal operator: true + false"),
+        (
+            "if(10>1) { if(10>1) {return true+false;} return 1; }",
+            "illegal operator: true + false",
+        ),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let evaluated = eval(&program);
+        match evaluated {
+            Object::Error(msg) => assert!(
+                msg == tt.1,
+                "wrong error msg in {}, expected={}, got={}",
+                tt.0,
+                tt.1,
+                msg
+            ),
+            _ => assert!(
+                false,
+                "wrong error msg in {}, expected={}, got={}",
+                tt.0, tt.1, evaluated
+            ),
+        };
+    }
+}
