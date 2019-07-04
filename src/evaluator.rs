@@ -1,7 +1,9 @@
 use crate::ast::*;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
+use std::rc::Rc;
 
 #[cfg(test)]
 mod evaluator_test;
@@ -12,6 +14,11 @@ pub enum Object {
     Int(i64),
     Boolean(bool),
     Return(Box<Object>),
+    Function(
+        Vec<Identifier>,
+        BlockStatement,
+        Option<Rc<RefCell<Environment>>>,
+    ),
     Error(String),
 }
 
@@ -22,6 +29,11 @@ impl fmt::Display for Object {
             Object::Int(int) => format!("{}", int),
             Object::Boolean(boolean) => format!("{}", boolean),
             Object::Return(obj) => format!("{}", obj),
+            Object::Function(parameters, body, _env) => {
+                let params: Vec<String> =
+                    parameters.iter().map(|param| param.to_string()).collect();
+                format!("fn({}) {{\n{}\n}}", params.join(", "), *body)
+            }
             Object::Error(msg) => format!("{}", msg),
         };
         write!(f, "{}", s)
@@ -34,10 +46,10 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn new() -> Self {
-        Environment {
+    pub fn new() -> Rc<RefCell<Environment>> {
+        Rc::new(RefCell::new(Environment {
             store: HashMap::new(),
-        }
+        }))
     }
     pub fn get(&self, key: &str) -> Option<&Object> {
         self.store.get(key)
@@ -63,11 +75,11 @@ fn is_error(obj: &Object) -> bool {
     }
 }
 
-pub fn eval(program: &Program, env: &mut Environment) -> Object {
+pub fn eval(program: &Program, env: &Rc<RefCell<Environment>>) -> Object {
     eval_statements(&program.statements, env)
 }
 
-fn eval_statements(stmts: &[Statement], env: &mut Environment) -> Object {
+fn eval_statements(stmts: &[Statement], env: &Rc<RefCell<Environment>>) -> Object {
     let mut result = Object::Null;
 
     for stmt in stmts {
@@ -83,7 +95,7 @@ fn eval_statements(stmts: &[Statement], env: &mut Environment) -> Object {
     result
 }
 
-fn eval_block_statements(stmts: &[Statement], env: &mut Environment) -> Object {
+fn eval_block_statements(stmts: &[Statement], env: &Rc<RefCell<Environment>>) -> Object {
     let mut result = Object::Null;
 
     for stmt in stmts {
@@ -98,14 +110,14 @@ fn eval_block_statements(stmts: &[Statement], env: &mut Environment) -> Object {
     result
 }
 
-fn eval_statement(stmt: &Statement, env: &mut Environment) -> Object {
+fn eval_statement(stmt: &Statement, env: &Rc<RefCell<Environment>>) -> Object {
     match stmt {
         Statement::Let(ident, expr) => {
             let obj = eval_expression(expr, env);
             if is_error(&obj) {
                 return obj;
             }
-            env.set(ident.0.clone(), obj.clone());
+            env.borrow_mut().set(ident.0.clone(), obj.clone());
             obj
         }
         Statement::Return(expr) => {
@@ -119,10 +131,10 @@ fn eval_statement(stmt: &Statement, env: &mut Environment) -> Object {
     }
 }
 
-fn eval_expression(expr: &Expression, env: &mut Environment) -> Object {
+fn eval_expression(expr: &Expression, env: &Rc<RefCell<Environment>>) -> Object {
     match expr {
         Expression::Ident(ident) => {
-            if let Some(obj) = env.get(&ident.0) {
+            if let Some(obj) = env.borrow().get(&ident.0) {
                 obj.clone()
             } else {
                 Object::Error(format!("identifier not found: {}", ident))
@@ -161,7 +173,9 @@ fn eval_expression(expr: &Expression, env: &mut Environment) -> Object {
                 Object::Null
             }
         }
-        //Expression::Function(Vec<Identifier>, BlockStatement),
+        Expression::Function(parameters, body) => {
+            Object::Function(parameters.clone(), body.clone(), Some(Rc::clone(env)))
+        }
         //Expression::Call(Box<Expression>, Vec<Expression>),*/
         _ => Object::Null,
     }
