@@ -71,7 +71,8 @@ fn test_eval_expression_integer() {
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
-        let evaluated = eval(&program);
+        let mut env = Environment::new();
+        let evaluated = eval(&program, &mut env);
         assert_eq!(is_object_integer(&evaluated, tt.0, tt.1), true);
     }
 }
@@ -105,7 +106,8 @@ fn test_eval_expression_boolean() {
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
-        let evaluated = eval(&program);
+        let mut env = Environment::new();
+        let evaluated = eval(&program, &mut env);
         assert_eq!(is_object_boolean(&evaluated, tt.0, tt.1), true);
     }
 }
@@ -126,7 +128,8 @@ fn test_eval_operator_bang() {
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
-        let evaluated = eval(&program);
+        let mut env = Environment::new();
+        let evaluated = eval(&program, &mut env);
         assert_eq!(is_object_boolean(&evaluated, tt.0, tt.1), true);
     }
 }
@@ -148,7 +151,8 @@ fn test_eval_expression_ifelse() {
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
-        let evaluated = eval(&program);
+        let mut env = Environment::new();
+        let evaluated = eval(&program, &mut env);
         if let Some(expected) = tt.1 {
             assert_eq!(is_object_integer(&evaluated, tt.0, expected), true);
         } else {
@@ -172,7 +176,8 @@ fn test_eval_statement_return() {
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
-        let evaluated = eval(&program);
+        let mut env = Environment::new();
+        let evaluated = eval(&program, &mut env);
         assert_eq!(is_object_integer(&evaluated, tt.0, tt.1), true);
     }
 }
@@ -197,7 +202,8 @@ fn test_error_handling() {
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
-        let evaluated = eval(&program);
+        let mut env = Environment::new();
+        let evaluated = eval(&program, &mut env);
         match evaluated {
             Object::Error(msg) => assert!(
                 msg == tt.1,
@@ -212,5 +218,25 @@ fn test_error_handling() {
                 tt.0, tt.1, evaluated
             ),
         };
+    }
+}
+
+#[test]
+fn test_let_statements() {
+    let tests = vec![
+        ("let a=5; a;", 5),
+        ("let a=5*5; a;", 25),
+        ("let a=5; let b=a; b;", 5),
+        ("let a=5; let b=a; let c=a+b+5; c;", 15),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let mut env = Environment::new();
+        let evaluated = eval(&program, &mut env);
+        assert_eq!(is_object_integer(&evaluated, tt.0, tt.1), true);
     }
 }

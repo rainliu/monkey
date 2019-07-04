@@ -1,4 +1,6 @@
 use crate::ast::*;
+
+use std::collections::HashMap;
 use std::fmt;
 
 #[cfg(test)]
@@ -26,8 +28,24 @@ impl fmt::Display for Object {
     }
 }
 
-pub fn eval(program: &Program) -> Object {
-    eval_statements(&program.statements)
+#[derive(Debug, Clone, PartialEq)]
+pub struct Environment {
+    store: HashMap<String, Object>,
+}
+
+impl Environment {
+    pub fn new() -> Self {
+        Environment {
+            store: HashMap::new(),
+        }
+    }
+    pub fn get(&self, key: &str) -> Option<&Object> {
+        self.store.get(key)
+    }
+
+    pub fn set(&mut self, key: String, value: Object) -> Option<Object> {
+        self.store.insert(key, value)
+    }
 }
 
 fn is_truthy(obj: &Object) -> bool {
@@ -45,11 +63,15 @@ fn is_error(obj: &Object) -> bool {
     }
 }
 
-fn eval_statements(stmts: &[Statement]) -> Object {
+pub fn eval(program: &Program, env: &mut Environment) -> Object {
+    eval_statements(&program.statements, env)
+}
+
+fn eval_statements(stmts: &[Statement], env: &mut Environment) -> Object {
     let mut result = Object::Null;
 
     for stmt in stmts {
-        result = eval_statement(stmt);
+        result = eval_statement(stmt, env);
 
         match result {
             Object::Return(obj) => return *obj,
@@ -61,11 +83,11 @@ fn eval_statements(stmts: &[Statement]) -> Object {
     result
 }
 
-fn eval_block_statements(stmts: &[Statement]) -> Object {
+fn eval_block_statements(stmts: &[Statement], env: &mut Environment) -> Object {
     let mut result = Object::Null;
 
     for stmt in stmts {
-        result = eval_statement(stmt);
+        result = eval_statement(stmt, env);
 
         match result {
             Object::Return(_) | Object::Error(_) => return result,
@@ -76,53 +98,65 @@ fn eval_block_statements(stmts: &[Statement]) -> Object {
     result
 }
 
-fn eval_statement(stmt: &Statement) -> Object {
+fn eval_statement(stmt: &Statement, env: &mut Environment) -> Object {
     match stmt {
-        //Statement::Let(Identifier, Expression),
+        Statement::Let(ident, expr) => {
+            let obj = eval_expression(expr, env);
+            if is_error(&obj) {
+                return obj;
+            }
+            env.set(ident.0.clone(), obj.clone());
+            obj
+        }
         Statement::Return(expr) => {
-            let obj = eval_expression(expr);
+            let obj = eval_expression(expr, env);
             if is_error(&obj) {
                 return obj;
             }
             Object::Return(Box::new(obj))
         }
-        Statement::Expression(expr) => eval_expression(expr),
-        _ => Object::Null,
+        Statement::Expression(expr) => eval_expression(expr, env),
     }
 }
 
-fn eval_expression(expr: &Expression) -> Object {
+fn eval_expression(expr: &Expression, env: &mut Environment) -> Object {
     match expr {
-        //Expression::Ident(ident),
+        Expression::Ident(ident) => {
+            if let Some(obj) = env.get(&ident.0) {
+                obj.clone()
+            } else {
+                Object::Error(format!("identifier not found: {}", ident))
+            }
+        }
         Expression::Int(int) => Object::Int(int.0),
         Expression::Boolean(boolean) => Object::Boolean(boolean.0),
         Expression::Prefix(prefix, right) => {
-            let right = eval_expression(right);
+            let right = eval_expression(right, env);
             if is_error(&right) {
                 return right;
             }
             eval_prefix_expression(prefix, &right)
         }
         Expression::Infix(left, infix, right) => {
-            let left = eval_expression(left);
+            let left = eval_expression(left, env);
             if is_error(&left) {
                 return left;
             }
-            let right = eval_expression(right);
+            let right = eval_expression(right, env);
             if is_error(&right) {
                 return right;
             }
             eval_infix_expression(&left, infix, &right)
         }
         Expression::If(condition, consequence, alternative) => {
-            let condition = eval_expression(condition);
+            let condition = eval_expression(condition, env);
             if is_error(&condition) {
                 return condition;
             }
             if is_truthy(&condition) {
-                eval_block_statements(&consequence.statements)
+                eval_block_statements(&consequence.statements, env)
             } else if let Some(alternative) = alternative {
-                eval_block_statements(&alternative.statements)
+                eval_block_statements(&alternative.statements, env)
             } else {
                 Object::Null
             }

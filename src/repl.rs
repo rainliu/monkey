@@ -7,6 +7,8 @@ use std::io;
 const PROMPT: &'static str = ">> ";
 
 pub fn start<R: io::BufRead, W: io::Write>(mut reader: R, mut writer: W) -> io::Result<()> {
+    let mut env = Environment::new();
+
     loop {
         writer.write(PROMPT.as_bytes())?;
         writer.flush()?;
@@ -24,7 +26,7 @@ pub fn start<R: io::BufRead, W: io::Write>(mut reader: R, mut writer: W) -> io::
             continue;
         }
 
-        let evaluated = eval(&program);
+        let evaluated = eval(&program, &mut env);
         writer.write(format!("{}\n", evaluated).as_bytes())?;
     }
 }

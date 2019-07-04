@@ -10,6 +10,7 @@ fn check_parser_errors(p: &Parser) {
     for error in errors {
         println!("parser error: {}", error);
     }
+    assert_eq!(errors.len(), 0);
 }
 
 fn is_statement_let(stmt: &Statement, name: &str) -> bool {
