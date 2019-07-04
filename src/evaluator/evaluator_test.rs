@@ -2,8 +2,8 @@ use super::*;
 use crate::lexer::*;
 use crate::parser::*;
 
-fn is_object_integer(obj: &Object, test: &str, expected: i64) -> bool {
-    match obj {
+fn is_object_integer(obj: Rc<Object>, test: &str, expected: i64) -> bool {
+    match &*obj {
         Object::Int(int) => {
             assert!(
                 *int == expected,
@@ -25,8 +25,8 @@ fn is_object_integer(obj: &Object, test: &str, expected: i64) -> bool {
     }
 }
 
-fn is_object_boolean(obj: &Object, test: &str, expected: bool) -> bool {
-    match obj {
+fn is_object_boolean(obj: Rc<Object>, test: &str, expected: bool) -> bool {
+    match &*obj {
         Object::Boolean(boolean) => {
             assert!(
                 *boolean == expected,
@@ -49,7 +49,7 @@ fn is_object_boolean(obj: &Object, test: &str, expected: bool) -> bool {
 }
 
 #[test]
-fn test_eval_expression_integer() {
+fn test_eval_expression_integer() -> Result<(), EvalError> {
     let tests = vec![
         ("5", 5),
         ("10", 10),
@@ -72,13 +72,14 @@ fn test_eval_expression_integer() {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, &env);
-        assert_eq!(is_object_integer(&evaluated, tt.0, tt.1), true);
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
     }
+    Ok(())
 }
 
 #[test]
-fn test_eval_expression_boolean() {
+fn test_eval_expression_boolean() -> Result<(), EvalError> {
     let tests = vec![
         ("true", true),
         ("false", false),
@@ -107,13 +108,14 @@ fn test_eval_expression_boolean() {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, &env);
-        assert_eq!(is_object_boolean(&evaluated, tt.0, tt.1), true);
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        assert_eq!(is_object_boolean(evaluated, tt.0, tt.1), true);
     }
+    Ok(())
 }
 
 #[test]
-fn test_eval_operator_bang() {
+fn test_eval_operator_bang() -> Result<(), EvalError> {
     let tests = vec![
         ("!true", false),
         ("!false", true),
@@ -129,13 +131,14 @@ fn test_eval_operator_bang() {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, &env);
-        assert_eq!(is_object_boolean(&evaluated, tt.0, tt.1), true);
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        assert_eq!(is_object_boolean(evaluated, tt.0, tt.1), true);
     }
+    Ok(())
 }
 
 #[test]
-fn test_eval_expression_ifelse() {
+fn test_eval_expression_ifelse() -> Result<(), EvalError> {
     let tests = vec![
         ("if(true) {10}", Some(10)),
         ("if(false) {10}", None),
@@ -152,17 +155,18 @@ fn test_eval_expression_ifelse() {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, &env);
+        let evaluated = eval(&program, Rc::clone(&env))?;
         if let Some(expected) = tt.1 {
-            assert_eq!(is_object_integer(&evaluated, tt.0, expected), true);
+            assert_eq!(is_object_integer(evaluated, tt.0, expected), true);
         } else {
-            assert_eq!(evaluated, Object::Null);
+            assert_eq!(&*evaluated, &Object::Null);
         }
     }
+    Ok(())
 }
 
 #[test]
-fn test_eval_statement_return() {
+fn test_eval_statement_return() -> Result<(), EvalError> {
     let tests = vec![
         ("return 10;", 10),
         ("return 10; 9;", 10),
@@ -177,13 +181,14 @@ fn test_eval_statement_return() {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, &env);
-        assert_eq!(is_object_integer(&evaluated, tt.0, tt.1), true);
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
     }
+    Ok(())
 }
 
 #[test]
-fn test_error_handling() {
+fn test_error_handling() -> Result<(), EvalError> {
     let tests = vec![
         ("-true", "illegal operator: -true"),
         ("5+true;", "illegal operator: 5 + true"),
@@ -203,26 +208,27 @@ fn test_error_handling() {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, &env);
+        let evaluated = eval(&program, Rc::clone(&env));
         match evaluated {
-            Object::Error(msg) => assert!(
-                msg == tt.1,
+            Err(msg) => assert!(
+                &msg.message == tt.1,
                 "wrong error msg in {}, expected={}, got={}",
                 tt.0,
                 tt.1,
                 msg
             ),
-            _ => assert!(
+            Ok(evaluated) => assert!(
                 false,
                 "wrong error msg in {}, expected={}, got={}",
                 tt.0, tt.1, evaluated
             ),
         };
     }
+    Ok(())
 }
 
 #[test]
-fn test_let_statements() {
+fn test_let_statements() -> Result<(), EvalError> {
     let tests = vec![
         ("let a=5; a;", 5),
         ("let a=5*5; a;", 25),
@@ -236,13 +242,14 @@ fn test_let_statements() {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, &env);
-        assert_eq!(is_object_integer(&evaluated, tt.0, tt.1), true);
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
     }
+    Ok(())
 }
 
 #[test]
-fn test_function_object() {
+fn test_function_object() -> Result<(), EvalError> {
     let input = "fn(x) { x+2; };";
 
     let l = Lexer::new(input);
@@ -250,8 +257,8 @@ fn test_function_object() {
 
     let program = p.parse_program();
     let env = Environment::new();
-    let evaluated = eval(&program, &env);
-    match evaluated{
+    let evaluated = eval(&program, env)?;
+    match &*evaluated {
         Object::Function(parameters, body, _env) => {
             assert_eq!(parameters.len(), 1);
             assert_eq!(parameters[0].0, "x");
@@ -259,4 +266,28 @@ fn test_function_object() {
         }
         _ => assert!(false, "object is not Function. got {}", evaluated),
     };
+    Ok(())
+}
+
+#[test]
+fn test_function_application() -> Result<(), EvalError> {
+    let tests = vec![
+        ("let identity = fn(x) {x;}; identity(5);", 5),
+        ("let identity = fn(x) {return x;}; identity(5);", 5),
+        ("let double = fn(x) {x*2;}; double(5);", 10),
+        ("let add = fn(x,y) {x+y;}; add(5,5);", 10),
+        ("let add = fn(x,y) {x+y;}; add(5+5, add(5,5));", 20),
+        ("fn(x){x;}(5)", 5),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let env = Environment::new();
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
+    }
+    Ok(())
 }

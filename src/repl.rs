@@ -3,6 +3,7 @@ use crate::lexer::*;
 use crate::parser::*;
 
 use std::io;
+use std::rc::Rc;
 
 const PROMPT: &'static str = ">> ";
 
@@ -26,7 +27,9 @@ pub fn start<R: io::BufRead, W: io::Write>(mut reader: R, mut writer: W) -> io::
             continue;
         }
 
-        let evaluated = eval(&program, &env);
-        writer.write(format!("{}\n", evaluated).as_bytes())?;
+        match eval(&program, Rc::clone(&env)) {
+            Ok(evaluated) => writer.write(format!("{}\n", evaluated).as_bytes())?,
+            Err(err) => writer.write(format!("error: {}\n", err).as_bytes())?,
+        };
     }
 }
