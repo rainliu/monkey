@@ -147,7 +147,7 @@ fn test_statement_let_errors() {
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
-    check_parser_errors(&p);
+    //check_parser_errors(&p);
     assert_eq!(program.statements.len(), 3);
 }
 

@@ -360,6 +360,8 @@ impl<'a> Parser<'a> {
     fn parse_statement_block(&mut self) -> BlockStatement {
         let mut program = Program::new();
 
+        self.next_token();
+
         while self.cur_token != Token::RBRACE && self.cur_token != Token::EOF {
             let stmt = self.parse_statement();
             if let Some(stmt) = stmt {
