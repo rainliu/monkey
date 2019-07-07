@@ -66,6 +66,9 @@ impl<'a> Lexer<'a> {
             Some(')') => Token::RPAREN,
             Some('{') => Token::LBRACE,
             Some('}') => Token::RBRACE,
+            Some('"') => {
+                self.read_string()
+            }
             Some(ch) => {
                 if Self::is_letter(ch) {
                     self.read_identifier(ch)
@@ -110,6 +113,18 @@ impl<'a> Lexer<'a> {
         }
 
         Token::lookup_ident(ident)
+    }
+
+    fn read_string(&mut self) -> Token {
+        let mut string = String::new();
+        loop {
+            match self.read_char() {
+                Some('"') | None => break,
+                Some(ch) => string.push(ch),
+            };
+        }
+
+        Token::STRING(string)
     }
 
     fn peek_is_number(&mut self) -> bool {

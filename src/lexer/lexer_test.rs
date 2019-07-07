@@ -140,3 +140,24 @@ fn test_next_token_extended() {
         assert_eq!(tok, *test);
     }
 }
+
+#[test]
+fn test_next_token_string() {
+    let input = "\"foobar\";
+    \"foo bar\";
+    ";
+
+    let tests = vec![
+        Token::STRING("foobar".to_string()),
+        Token::SEMICOLON,
+        Token::STRING("foo bar".to_string()),
+        Token::SEMICOLON,
+        Token::EOF,
+    ];
+
+    let mut l = Lexer::new(input);
+    for test in &tests {
+        let tok = l.next_token();
+        assert_eq!(tok, *test);
+    }
+}

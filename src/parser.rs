@@ -119,6 +119,7 @@ impl<'a> Parser<'a> {
         match token {
             Token::IDENT(_) => Some(Parser::parse_identifier),
             Token::INT(_) => Some(Parser::parse_integer),
+            Token::STRING(_) => Some(Parser::parse_string),
             Token::BANG | Token::MINUS => Some(Parser::parse_prefix),
             Token::TRUE | Token::FALSE => Some(Parser::parse_boolean),
             Token::LPAREN => Some(Parser::parse_parenthesis),
@@ -146,7 +147,7 @@ impl<'a> Parser<'a> {
 
     fn parse_identifier(parser: &mut Parser) -> Option<Expression> {
         match &parser.cur_token {
-            Token::IDENT(ident) => Some(Expression::Ident(Identifier(ident.to_string()))),
+            Token::IDENT(ident) => Some(Expression::Identifier(IdentifierLiteral(ident.to_string()))),
             _ => None,
         }
     }
@@ -154,17 +155,24 @@ impl<'a> Parser<'a> {
     fn parse_integer(parser: &mut Parser) -> Option<Expression> {
         match &parser.cur_token {
             Token::INT(int) => match int.parse::<i64>() {
-                Ok(i) => Some(Expression::Int(Integer(i))),
+                Ok(i) => Some(Expression::Integer(IntegerLiteral(i))),
                 _ => None,
             },
             _ => None,
         }
     }
 
+    fn parse_string(parser: &mut Parser) -> Option<Expression> {
+        match &parser.cur_token {
+            Token::STRING(string) => Some(Expression::String(StringLiteral(string.to_string()))),
+            _ => None,
+        }
+    }
+
     fn parse_boolean(parser: &mut Parser) -> Option<Expression> {
         match &parser.cur_token {
-            Token::TRUE => Some(Expression::Boolean(Boolean(true))),
-            Token::FALSE => Some(Expression::Boolean(Boolean(false))),
+            Token::TRUE => Some(Expression::Boolean(BooleanLiteral(true))),
+            Token::FALSE => Some(Expression::Boolean(BooleanLiteral(false))),
             _ => None,
         }
     }
@@ -321,7 +329,7 @@ impl<'a> Parser<'a> {
                 self.next_token();
             }
 
-            Some(Statement::Let(Identifier(ident), expr))
+            Some(Statement::Let(IdentifierLiteral(ident), expr))
         } else {
             None
         }
@@ -373,7 +381,7 @@ impl<'a> Parser<'a> {
         program
     }
 
-    fn parse_function_parameters(&mut self) -> Option<Vec<Identifier>> {
+    fn parse_function_parameters(&mut self) -> Option<Vec<IdentifierLiteral>> {
         let mut identifiers = vec![];
 
         if let Some(&Token::RPAREN) = self.lexer.peek() {
@@ -383,7 +391,7 @@ impl<'a> Parser<'a> {
 
         self.next_token();
         match &self.cur_token {
-            Token::IDENT(ident) => identifiers.push(Identifier(ident.clone())),
+            Token::IDENT(ident) => identifiers.push(IdentifierLiteral(ident.clone())),
             _ => return None,
         }
 
@@ -394,7 +402,7 @@ impl<'a> Parser<'a> {
             self.next_token();
             self.next_token();
             match &self.cur_token {
-                Token::IDENT(ident) => identifiers.push(Identifier(ident.clone())),
+                Token::IDENT(ident) => identifiers.push(IdentifierLiteral(ident.clone())),
                 _ => return None,
             }
         }

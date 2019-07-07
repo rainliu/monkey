@@ -28,19 +28,21 @@ impl std::error::Error for EvalError {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Object {
     Null,
-    Int(i64),
+    Integer(i64),
     Boolean(bool),
+    String(String),
     Return(Rc<Object>),
-    Function(Vec<Identifier>, BlockStatement, Rc<RefCell<Environment>>),
+    Function(Vec<IdentifierLiteral>, BlockStatement, Rc<RefCell<Environment>>),
 }
 
 impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {
             Object::Null => "null".to_string(),
-            Object::Int(int) => format!("{}", int),
+            Object::Integer(integer) => format!("{}", integer),
             Object::Boolean(boolean) => format!("{}", boolean),
-            Object::Return(obj) => format!("{}", obj),
+            Object::String(string) => format!("{}", string),
+            Object::Return(object) => format!("{}", object),
             Object::Function(parameters, body, _env) => {
                 let params: Vec<String> =
                     parameters.iter().map(|param| param.to_string()).collect();
@@ -158,7 +160,7 @@ fn eval_expression(
     env: Rc<RefCell<Environment>>,
 ) -> Result<Rc<Object>, EvalError> {
     match expr {
-        Expression::Ident(ident) => {
+        Expression::Identifier(ident) => {
             if let Some(obj) = env.borrow().get(&ident.0) {
                 Ok(obj)
             } else {
@@ -167,8 +169,9 @@ fn eval_expression(
                 })
             }
         }
-        Expression::Int(int) => Ok(Rc::new(Object::Int(int.0))),
+        Expression::Integer(int) => Ok(Rc::new(Object::Integer(int.0))),
         Expression::Boolean(boolean) => Ok(Rc::new(Object::Boolean(boolean.0))),
+        Expression::String(string) => Ok(Rc::new(Object::String(string.0.clone()))),
         Expression::Prefix(prefix, right) => {
             let right = eval_expression(right, env)?;
             eval_prefix_expression(prefix, right)
@@ -232,7 +235,7 @@ fn eval_bang_operator_expression(right: Rc<Object>) -> Result<Rc<Object>, EvalEr
 
 fn eval_minus_operator_expression(right: Rc<Object>) -> Result<Rc<Object>, EvalError> {
     match &*right {
-        Object::Int(int) => Ok(Rc::new(Object::Int(-*int))),
+        Object::Integer(int) => Ok(Rc::new(Object::Integer(-*int))),
         _ => Err(EvalError {
             message: format!("illegal operator: -{}", right),
         }),
@@ -245,7 +248,7 @@ fn eval_infix_expression(
     right: Rc<Object>,
 ) -> Result<Rc<Object>, EvalError> {
     match (&*left, infix, &*right) {
-        (Object::Int(left), _, Object::Int(right)) => {
+        (Object::Integer(left), _, Object::Integer(right)) => {
             eval_integer_infix_expression(*left, infix, *right)
         }
         (_, &Infix::EQ, _) => Ok(Rc::new(Object::Boolean(*left == *right))),
@@ -262,10 +265,10 @@ fn eval_integer_infix_expression(
     right: i64,
 ) -> Result<Rc<Object>, EvalError> {
     let obj = match infix {
-        &Infix::PLUS => Object::Int(left + right),
-        &Infix::MINUS => Object::Int(left - right),
-        &Infix::ASTERISK => Object::Int(left * right),
-        &Infix::SLASH => Object::Int(left / right),
+        &Infix::PLUS => Object::Integer(left + right),
+        &Infix::MINUS => Object::Integer(left - right),
+        &Infix::ASTERISK => Object::Integer(left * right),
+        &Infix::SLASH => Object::Integer(left / right),
         &Infix::LT => Object::Boolean(left < right),
         &Infix::GT => Object::Boolean(left > right),
         &Infix::EQ => Object::Boolean(left == right),

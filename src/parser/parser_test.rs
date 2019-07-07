@@ -25,7 +25,7 @@ fn is_statement_let(stmt: &Statement, name: &str) -> bool {
 
 fn is_expression_integer(expr: &Expression, value: i64) -> bool {
     match expr {
-        Expression::Int(int) => {
+        Expression::Integer(int) => {
             assert_eq!(int.0, value);
             true
         }
@@ -35,7 +35,7 @@ fn is_expression_integer(expr: &Expression, value: i64) -> bool {
 
 fn is_expression_identifier(expr: &Expression, value: &str) -> bool {
     match expr {
-        Expression::Ident(ident) => {
+        Expression::Identifier(ident) => {
             assert_eq!(ident.0, value);
             true
         }
@@ -186,7 +186,7 @@ fn test_expression_identifier() {
     for stmt in &program.statements {
         match stmt {
             Statement::Expression(expr) => match expr {
-                Expression::Ident(ident) => assert_eq!(ident.0, "foobar"),
+                Expression::Identifier(ident) => assert_eq!(ident.0, "foobar"),
                 _ => assert!(false, "Expression is not Ident"),
             },
             _ => assert!(false, "Statement is not Expression"),
@@ -208,8 +208,30 @@ fn test_expression_integer() {
     for stmt in &program.statements {
         match stmt {
             Statement::Expression(expr) => match expr {
-                Expression::Int(int) => assert_eq!(int.0, 5),
+                Expression::Integer(int) => assert_eq!(int.0, 5),
                 _ => assert!(false, "Expression is not Int"),
+            },
+            _ => assert!(false, "Statement is not Expression"),
+        };
+    }
+}
+
+#[test]
+fn test_expression_string() {
+    let input = "\"hello world\";";
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+    assert_eq!(program.statements.len(), 1);
+
+    for stmt in &program.statements {
+        match stmt {
+            Statement::Expression(expr) => match expr {
+                Expression::String(string) => assert_eq!(string.0, "hello world"),
+                _ => assert!(false, "Expression is not String"),
             },
             _ => assert!(false, "Statement is not Expression"),
         };
@@ -341,8 +363,8 @@ fn test_expression_function() {
             Statement::Expression(expr) => match expr {
                 Expression::Function(parameters, body) => {
                     assert_eq!(parameters.len(), 2);
-                    assert_eq!(parameters[0], Identifier("x".to_string()));
-                    assert_eq!(parameters[1], Identifier("y".to_string()));
+                    assert_eq!(parameters[0], IdentifierLiteral("x".to_string()));
+                    assert_eq!(parameters[1], IdentifierLiteral("y".to_string()));
                     assert_eq!(body.statements.len(), 1);
                     if let Some(stmt) = body.statements.first() {
                         match stmt {
@@ -372,13 +394,13 @@ fn test_expression_function() {
 fn test_expression_function_parameters() {
     let tests = vec![
         ("fn() {};", vec![]),
-        ("fn(x) {};", vec![Identifier("x".to_string())]),
+        ("fn(x) {};", vec![IdentifierLiteral("x".to_string())]),
         (
             "fn(x,y,z) {x+y;}",
             vec![
-                Identifier("x".to_string()),
-                Identifier("y".to_string()),
-                Identifier("z".to_string()),
+                IdentifierLiteral("x".to_string()),
+                IdentifierLiteral("y".to_string()),
+                IdentifierLiteral("z".to_string()),
             ],
         ),
     ];

@@ -5,7 +5,7 @@ mod ast_test;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
-    Let(Identifier, Expression),
+    Let(IdentifierLiteral, Expression),
     Return(Expression),
     Expression(Expression),
 }
@@ -25,22 +25,24 @@ pub type BlockStatement = Program;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    Ident(Identifier),
-    Int(Integer),
-    Boolean(Boolean),
+    Identifier(IdentifierLiteral),
+    Integer(IntegerLiteral),
+    Boolean(BooleanLiteral),
+    String(StringLiteral),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
     If(Box<Expression>, BlockStatement, Option<BlockStatement>),
-    Function(Vec<Identifier>, BlockStatement),
+    Function(Vec<IdentifierLiteral>, BlockStatement),
     Call(Box<Expression>, Vec<Expression>),
 }
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {
-            Expression::Ident(ident) => format!("{}", ident),
-            Expression::Int(int) => format!("{}", int),
+            Expression::Identifier(identifier) => format!("{}", identifier),
+            Expression::Integer(integer) => format!("{}", integer),
             Expression::Boolean(boolean) => format!("{}", boolean),
+            Expression::String(string) => format!("{}", string),
             Expression::Prefix(prefix, right) => format!("({}{})", prefix, *right),
             Expression::Infix(left, infix, right) => format!("({} {} {})", *left, infix, *right),
             Expression::If(condition, consequence, alternative) => {
@@ -88,22 +90,32 @@ impl Program {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Identifier(pub String);
+pub struct IdentifierLiteral(pub String);
 
-impl fmt::Display for Identifier {
+impl fmt::Display for IdentifierLiteral {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Integer(pub i64);
+pub struct IntegerLiteral(pub i64);
 
-impl fmt::Display for Integer {
+impl fmt::Display for IntegerLiteral {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct StringLiteral(pub String);
+
+impl fmt::Display for StringLiteral {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Prefix {
@@ -156,9 +168,9 @@ impl fmt::Display for Infix {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Boolean(pub bool);
+pub struct BooleanLiteral(pub bool);
 
-impl fmt::Display for Boolean {
+impl fmt::Display for BooleanLiteral {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }

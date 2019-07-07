@@ -4,8 +4,8 @@ use super::*;
 fn test_string() {
     let program = Program {
         statements: vec![Statement::Let(
-            Identifier("myVar".to_string()),
-            Expression::Ident(Identifier("anotherVar".to_string())),
+            IdentifierLiteral("myVar".to_string()),
+            Expression::Identifier(IdentifierLiteral("anotherVar".to_string())),
         )],
     };
 

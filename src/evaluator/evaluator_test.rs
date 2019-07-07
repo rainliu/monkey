@@ -4,7 +4,7 @@ use crate::parser::*;
 
 fn is_object_integer(obj: Rc<Object>, test: &str, expected: i64) -> bool {
     match &*obj {
-        Object::Int(int) => {
+        Object::Integer(int) => {
             assert!(
                 *int == expected,
                 "Eval {}, expected Integer({}), but got {}",
@@ -41,6 +41,29 @@ fn is_object_boolean(obj: Rc<Object>, test: &str, expected: bool) -> bool {
             assert!(
                 false,
                 "Eval {}, expected Boolean({}), but got {}",
+                test, expected, obj
+            );
+            false
+        }
+    }
+}
+
+fn is_object_string(obj: Rc<Object>, test: &str, expected: &str) -> bool {
+    match &*obj {
+        Object::String(string) => {
+            assert!(
+                string == expected,
+                "Eval {}, expected String({}), but got {}",
+                test,
+                expected,
+                obj
+            );
+            true
+        }
+        _ => {
+            assert!(
+                false,
+                "Eval {}, expected String({}), but got {}",
                 test, expected, obj
             );
             false
@@ -110,6 +133,24 @@ fn test_eval_expression_boolean() -> Result<(), EvalError> {
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
         assert_eq!(is_object_boolean(evaluated, tt.0, tt.1), true);
+    }
+    Ok(())
+}
+
+#[test]
+fn test_eval_expression_string() -> Result<(), EvalError> {
+    let tests = vec![
+        ("\"Hello World\"", "Hello World"),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let env = Environment::new();
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        assert_eq!(is_object_string(evaluated, tt.0, tt.1), true);
     }
     Ok(())
 }
