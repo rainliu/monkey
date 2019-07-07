@@ -161,3 +161,24 @@ fn test_next_token_string() {
         assert_eq!(tok, *test);
     }
 }
+
+#[test]
+fn test_next_token_bracket() {
+    let input = "[1,2];";
+
+    let tests = vec![
+        Token::LBRACKET,
+        Token::INT("1".to_string()),
+        Token::COMMA,
+        Token::INT("2".to_string()),
+        Token::RBRACKET,
+        Token::SEMICOLON,
+        Token::EOF,
+    ];
+
+    let mut l = Lexer::new(input);
+    for test in &tests {
+        let tok = l.next_token();
+        assert_eq!(tok, *test);
+    }
+}

@@ -66,6 +66,8 @@ impl<'a> Lexer<'a> {
             Some(')') => Token::RPAREN,
             Some('{') => Token::LBRACE,
             Some('}') => Token::RBRACE,
+            Some('[') => Token::LBRACKET,
+            Some(']') => Token::RBRACKET,
             Some('"') => self.read_string(),
             Some(ch) => {
                 if Self::is_letter(ch) {
