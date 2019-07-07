@@ -244,6 +244,9 @@ fn eval_expression(
             let args = eval_expressions(arguments, env)?;
             apply_function(function, args)
         }
+        _ => Err(EvalError {
+            message: format!("to be implemented {}", expr),
+        }),
     }
 }
 

@@ -78,7 +78,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn expect_peek(&mut self, expected: Token) -> bool {
+    fn expect_peek(&mut self, expected: &Token) -> bool {
         match self.lexer.peek() {
             Some(&Token::IDENT(_)) => match expected {
                 Token::IDENT(_) => {
@@ -94,7 +94,7 @@ impl<'a> Parser<'a> {
                 }
             },
             Some(token) => {
-                if *token == expected {
+                if token == expected {
                     self.next_token();
                     true
                 } else {
@@ -120,6 +120,7 @@ impl<'a> Parser<'a> {
             Token::IDENT(_) => Some(Parser::parse_identifier),
             Token::INT(_) => Some(Parser::parse_integer),
             Token::STRING(_) => Some(Parser::parse_string),
+            Token::LBRACKET => Some(Parser::parse_array),
             Token::BANG | Token::MINUS => Some(Parser::parse_prefix),
             Token::TRUE | Token::FALSE => Some(Parser::parse_boolean),
             Token::LPAREN => Some(Parser::parse_parenthesis),
@@ -171,6 +172,14 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_array(parser: &mut Parser) -> Option<Expression> {
+        if let Some(array) = parser.parse_call_arguments(&Token::RBRACKET) {
+            Some(Expression::Array(array))
+        } else {
+            None
+        }
+    }
+
     fn parse_boolean(parser: &mut Parser) -> Option<Expression> {
         match &parser.cur_token {
             Token::TRUE => Some(Expression::Boolean(BooleanLiteral(true))),
@@ -184,7 +193,7 @@ impl<'a> Parser<'a> {
 
         let expr = parser.parse_expression(Precedence::LOWEST);
 
-        if !parser.expect_peek(Token::RPAREN) {
+        if !parser.expect_peek(&Token::RPAREN) {
             return None;
         }
 
@@ -192,7 +201,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_if(parser: &mut Parser) -> Option<Expression> {
-        if !parser.expect_peek(Token::LPAREN) {
+        if !parser.expect_peek(&Token::LPAREN) {
             return None;
         }
 
@@ -203,11 +212,11 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        if !parser.expect_peek(Token::RPAREN) {
+        if !parser.expect_peek(&Token::RPAREN) {
             return None;
         }
 
-        if !parser.expect_peek(Token::LBRACE) {
+        if !parser.expect_peek(&Token::LBRACE) {
             return None;
         }
 
@@ -217,7 +226,7 @@ impl<'a> Parser<'a> {
             match token {
                 Token::ELSE => {
                     parser.next_token();
-                    if !parser.expect_peek(Token::LBRACE) {
+                    if !parser.expect_peek(&Token::LBRACE) {
                         return None;
                     }
 
@@ -237,7 +246,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function(parser: &mut Parser) -> Option<Expression> {
-        if !parser.expect_peek(Token::LPAREN) {
+        if !parser.expect_peek(&Token::LPAREN) {
             return None;
         }
 
@@ -246,7 +255,7 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        if !parser.expect_peek(Token::LBRACE) {
+        if !parser.expect_peek(&Token::LBRACE) {
             return None;
         }
 
@@ -256,7 +265,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call(parser: &mut Parser, left: Expression) -> Option<Expression> {
-        if let Some(args) = parser.parse_call_arguments() {
+        if let Some(args) = parser.parse_call_arguments(&Token::RPAREN) {
             Some(Expression::Call(Box::new(left), args))
         } else {
             None
@@ -311,7 +320,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_statement_let(&mut self) -> Option<Statement> {
-        if !self.expect_peek(Token::IDENT("unknown".to_string())) {
+        if !self.expect_peek(&Token::IDENT("unknown".to_string())) {
             return None;
         }
 
@@ -320,7 +329,7 @@ impl<'a> Parser<'a> {
             _ => return None,
         };
 
-        if !self.expect_peek(Token::ASSIGN) {
+        if !self.expect_peek(&Token::ASSIGN) {
             return None;
         }
 
@@ -409,19 +418,21 @@ impl<'a> Parser<'a> {
             }
         }
 
-        if !self.expect_peek(Token::RPAREN) {
+        if !self.expect_peek(&Token::RPAREN) {
             return None;
         }
 
         Some(identifiers)
     }
 
-    fn parse_call_arguments(&mut self) -> Option<Vec<Expression>> {
+    fn parse_call_arguments(&mut self, expected: &Token) -> Option<Vec<Expression>> {
         let mut args = vec![];
 
-        if let Some(&Token::RPAREN) = self.lexer.peek() {
-            self.next_token();
-            return Some(args);
+        if let Some(token) = self.lexer.peek() {
+            if token == expected {
+                self.next_token();
+                return Some(args);
+            }
         }
 
         self.next_token();
@@ -444,7 +455,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        if !self.expect_peek(Token::RPAREN) {
+        if !self.expect_peek(expected) {
             return None;
         }
 

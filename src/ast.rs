@@ -29,6 +29,7 @@ pub enum Expression {
     Integer(IntegerLiteral),
     Boolean(BooleanLiteral),
     String(StringLiteral),
+    Array(Vec<Expression>),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
     If(Box<Expression>, BlockStatement, Option<BlockStatement>),
@@ -43,6 +44,10 @@ impl fmt::Display for Expression {
             Expression::Integer(integer) => format!("{}", integer),
             Expression::Boolean(boolean) => format!("{}", boolean),
             Expression::String(string) => format!("{}", string),
+            Expression::Array(exprs) => {
+                let arrays: Vec<String> = exprs.iter().map(|expr| expr.to_string()).collect();
+                format!("[{}]", arrays.join(", "))
+            }
             Expression::Prefix(prefix, right) => format!("({}{})", prefix, *right),
             Expression::Infix(left, infix, right) => format!("({} {} {})", *left, infix, *right),
             Expression::If(condition, consequence, alternative) => {

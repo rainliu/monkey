@@ -239,6 +239,33 @@ fn test_expression_string() {
 }
 
 #[test]
+fn test_expression_array() {
+    let input = "[1, 2*2, 3+3]";
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+    assert_eq!(program.statements.len(), 1);
+
+    for stmt in &program.statements {
+        match stmt {
+            Statement::Expression(expr) => match expr {
+                Expression::Array(array) => {
+                    assert_eq!(array.len(), 3);
+                    assert_eq!(is_expression_literal(&array[0], &Literal::Int(1)), true);
+                    assert_eq!(is_expression_infix(&array[1], &Literal::Int(2), &Infix::ASTERISK, &Literal::Int(2)), true);
+                    assert_eq!(is_expression_infix(&array[2], &Literal::Int(3), &Infix::PLUS, &Literal::Int(3)), true);
+                },
+                _ => assert!(false, "Expression is not Array"),
+            },
+            _ => assert!(false, "Statement is not Expression"),
+        };
+    }
+}
+
+#[test]
 fn test_expression_if() {
     let input = "if (x<y) {x}";
 
