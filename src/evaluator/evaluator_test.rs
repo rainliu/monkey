@@ -193,6 +193,49 @@ fn test_eval_expression_array() -> Result<(), EvalError> {
 }
 
 #[test]
+fn test_eval_expression_array_index() -> Result<(), EvalError> {
+    let tests = vec![
+        ("[1, 2, 3][0]", Some(1)),
+        ("[1, 2, 3][1]", Some(2)),
+        ("[1, 2, 3][2]", Some(3)),
+        ("let i = 0; [1][i]", Some(1)),
+        ("[1, 2, 3][1+1]", Some(3)),
+        ("let myArray = [1,2,3]; myArray[2];", Some(3)),
+        (
+            "let myArray = [1,2,3]; myArray[0]+myArray[1]+myArray[2];",
+            Some(6),
+        ),
+        (
+            "let myArray = [1,2,3]; let i = myArray[0]; myArray[i]",
+            Some(2),
+        ),
+        ("[1,2,3][3]", None),
+        ("[1,2,3][-1]", None),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let env = Environment::new();
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        match &*evaluated {
+            Object::Null => assert_eq!(tt.1, None),
+            _ => {
+                if let Some(result) = tt.1 {
+                    assert_eq!(is_object_integer(&*evaluated, tt.0, result), true);
+                } else {
+                    assert!(false, "Wrong result: expected null, but got {}", evaluated);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+#[test]
 fn test_eval_operator_bang() -> Result<(), EvalError> {
     let tests = vec![
         ("!true", false),

@@ -254,9 +254,13 @@ fn eval_expression(
             let elements = eval_expressions(array, env)?;
             Ok(Rc::new(Object::Array(elements)))
         }
-        _ => Err(EvalError {
-            message: format!("to be implemented {}", expr),
-        }),
+        Expression::Index(left, right) => {
+            let array = eval_expression(left, Rc::clone(&env))?;
+            let index = eval_expression(right, env)?;
+            eval_index_expression(array, index)
+        } /*_ => Err(EvalError {
+              message: format!("to be implemented {}", expr),
+          }),*/
     }
 }
 
@@ -318,6 +322,17 @@ fn eval_infix_expression(
     }
 }
 
+fn eval_index_expression(array: Rc<Object>, index: Rc<Object>) -> Result<Rc<Object>, EvalError> {
+    match (&*array, &*index) {
+        (Object::Array(array), Object::Integer(index)) => {
+            eval_array_index_expression(array, *index)
+        }
+        _ => Err(EvalError {
+            message: format!("index operator not supported: {}", array),
+        }),
+    }
+}
+
 fn eval_integer_infix_expression(
     left: i64,
     infix: &Infix,
@@ -352,6 +367,14 @@ fn eval_string_infix_expression(
     };
 
     Ok(Rc::new(obj))
+}
+
+fn eval_array_index_expression(array: &[Rc<Object>], index: i64) -> Result<Rc<Object>, EvalError> {
+    if index < 0 || index >= array.len() as i64 {
+        Ok(Rc::new(Object::Null))
+    } else {
+        Ok(Rc::clone(&array[index as usize]))
+    }
 }
 
 fn apply_function(function: Rc<Object>, args: Vec<Rc<Object>>) -> Result<Rc<Object>, EvalError> {
