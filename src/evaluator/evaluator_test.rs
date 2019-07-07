@@ -139,9 +139,7 @@ fn test_eval_expression_boolean() -> Result<(), EvalError> {
 
 #[test]
 fn test_eval_expression_string() -> Result<(), EvalError> {
-    let tests = vec![
-        ("\"Hello World\"", "Hello World"),
-    ];
+    let tests = vec![("\"Hello World\"", "Hello World")];
 
     for tt in tests {
         let l = Lexer::new(tt.0);
@@ -157,9 +155,7 @@ fn test_eval_expression_string() -> Result<(), EvalError> {
 
 #[test]
 fn test_eval_expression_string_concatenation() -> Result<(), EvalError> {
-    let tests = vec![
-        ("\"Hello\" + \" \" + \"World\"", "Hello World"),
-    ];
+    let tests = vec![("\"Hello\" + \" \" + \"World\"", "Hello World")];
 
     for tt in tests {
         let l = Lexer::new(tt.0);
@@ -348,6 +344,50 @@ fn test_function_application() -> Result<(), EvalError> {
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
         assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
+    }
+    Ok(())
+}
+
+#[test]
+fn test_builtin_functions() -> Result<(), EvalError> {
+    let tests = vec![
+        ("len(\"\")", 0),
+        ("len(\"four\")", 4),
+        ("len(\"hello world\")", 11),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let env = Environment::new();
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
+    }
+    Ok(())
+}
+
+#[test]
+fn test_illegal_builtin_functions() -> Result<(), EvalError> {
+    let tests = vec![
+        ("len(1)", "argument to \"len\" not supported, got 1"),
+        (
+            "len(\"one\", \"two\")",
+            "wrong number of arguments. got=2, want=1",
+        ),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let env = Environment::new();
+        match eval(&program, Rc::clone(&env)) {
+            Err(error) => assert_eq!(error.message, tt.1),
+            _ => {}
+        }
     }
     Ok(())
 }

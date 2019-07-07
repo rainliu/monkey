@@ -26,6 +26,39 @@ impl std::error::Error for EvalError {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum Builtin {
+    Len,
+}
+
+impl Builtin {
+    pub fn lookup(name: &str) -> Option<Rc<Object>> {
+        match name {
+            "len" => Some(Rc::new(Object::Builtin(Builtin::Len))),
+            _ => None,
+        }
+    }
+
+    pub fn apply(&self, args: &[Rc<Object>]) -> Result<Rc<Object>, EvalError> {
+        match self {
+            Builtin::Len => {
+                if args.len() != 1 {
+                    return Err(EvalError {
+                        message: format!("wrong number of arguments. got={}, want=1", args.len()),
+                    });
+                }
+
+                match &*args[0] {
+                    Object::String(string) => Ok(Rc::new(Object::Integer(string.len() as i64))),
+                    _ => Err(EvalError {
+                        message: format!("argument to \"len\" not supported, got {}", args[0]),
+                    }),
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Object {
     Null,
     Integer(i64),
@@ -37,6 +70,7 @@ pub enum Object {
         BlockStatement,
         Rc<RefCell<Environment>>,
     ),
+    Builtin(Builtin),
 }
 
 impl fmt::Display for Object {
@@ -52,6 +86,7 @@ impl fmt::Display for Object {
                     parameters.iter().map(|param| param.to_string()).collect();
                 format!("fn({}) {{\n{}\n}}", params.join(", "), *body)
             }
+            Object::Builtin(builtin) => format!("{:?}", builtin),
         };
         write!(f, "{}", s)
     }
@@ -166,12 +201,16 @@ fn eval_expression(
     match expr {
         Expression::Identifier(ident) => {
             if let Some(obj) = env.borrow().get(&ident.0) {
-                Ok(obj)
-            } else {
-                Err(EvalError {
-                    message: format!("identifier not found: {}", ident),
-                })
+                return Ok(obj);
             }
+
+            if let Some(obj) = Builtin::lookup(&ident.0) {
+                return Ok(obj);
+            }
+
+            Err(EvalError {
+                message: format!("identifier not found: {}", ident),
+            })
         }
         Expression::Integer(int) => Ok(Rc::new(Object::Integer(int.0))),
         Expression::Boolean(boolean) => Ok(Rc::new(Object::Boolean(boolean.0))),
@@ -315,6 +354,7 @@ fn apply_function(function: Rc<Object>, args: Vec<Rc<Object>>) -> Result<Rc<Obje
                 _ => Ok(evaluated),
             }
         }
+        Object::Builtin(builtin) => builtin.apply(&args),
         _ => Err(EvalError {
             message: format!("not a function: {}", function),
         }),

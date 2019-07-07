@@ -116,7 +116,6 @@ impl fmt::Display for StringLiteral {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Prefix {
     MINUS, // -

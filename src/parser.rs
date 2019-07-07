@@ -147,7 +147,9 @@ impl<'a> Parser<'a> {
 
     fn parse_identifier(parser: &mut Parser) -> Option<Expression> {
         match &parser.cur_token {
-            Token::IDENT(ident) => Some(Expression::Identifier(IdentifierLiteral(ident.to_string()))),
+            Token::IDENT(ident) => {
+                Some(Expression::Identifier(IdentifierLiteral(ident.to_string())))
+            }
             _ => None,
         }
     }
