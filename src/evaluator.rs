@@ -64,6 +64,7 @@ pub enum Object {
     Integer(i64),
     Boolean(bool),
     String(String),
+    Array(Vec<Rc<Object>>),
     Return(Rc<Object>),
     Function(
         Vec<IdentifierLiteral>,
@@ -80,6 +81,11 @@ impl fmt::Display for Object {
             Object::Integer(integer) => format!("{}", integer),
             Object::Boolean(boolean) => format!("{}", boolean),
             Object::String(string) => format!("{}", string),
+            Object::Array(array) => {
+                let elements: Vec<String> =
+                    array.iter().map(|element| element.to_string()).collect();
+                format!("[{}]", elements.join(", "))
+            }
             Object::Return(object) => format!("{}", object),
             Object::Function(parameters, body, _env) => {
                 let params: Vec<String> =
@@ -243,6 +249,10 @@ fn eval_expression(
             let function = eval_expression(function, Rc::clone(&env))?;
             let args = eval_expressions(arguments, env)?;
             apply_function(function, args)
+        }
+        Expression::Array(array) => {
+            let elements = eval_expressions(array, env)?;
+            Ok(Rc::new(Object::Array(elements)))
         }
         _ => Err(EvalError {
             message: format!("to be implemented {}", expr),

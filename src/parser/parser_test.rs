@@ -255,9 +255,25 @@ fn test_expression_array() {
                 Expression::Array(array) => {
                     assert_eq!(array.len(), 3);
                     assert_eq!(is_expression_literal(&array[0], &Literal::Int(1)), true);
-                    assert_eq!(is_expression_infix(&array[1], &Literal::Int(2), &Infix::ASTERISK, &Literal::Int(2)), true);
-                    assert_eq!(is_expression_infix(&array[2], &Literal::Int(3), &Infix::PLUS, &Literal::Int(3)), true);
-                },
+                    assert_eq!(
+                        is_expression_infix(
+                            &array[1],
+                            &Literal::Int(2),
+                            &Infix::ASTERISK,
+                            &Literal::Int(2)
+                        ),
+                        true
+                    );
+                    assert_eq!(
+                        is_expression_infix(
+                            &array[2],
+                            &Literal::Int(3),
+                            &Infix::PLUS,
+                            &Literal::Int(3)
+                        ),
+                        true
+                    );
+                }
                 _ => assert!(false, "Expression is not Array"),
             },
             _ => assert!(false, "Statement is not Expression"),
@@ -627,6 +643,11 @@ fn test_operator_precedence_parsing() {
         (
             "add(a + b + c * d/f+g)",
             "add((((a + b) + ((c * d) / f)) + g))",
+        ),
+        ("a*[1,2,3,4][b*c]*d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"),
+        (
+            "add(a*b[2], b[1], 2*[1,2][1])",
+            "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
         ),
     ];
 

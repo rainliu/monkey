@@ -2,8 +2,8 @@ use super::*;
 use crate::lexer::*;
 use crate::parser::*;
 
-fn is_object_integer(obj: Rc<Object>, test: &str, expected: i64) -> bool {
-    match &*obj {
+fn is_object_integer(obj: &Object, test: &str, expected: i64) -> bool {
+    match obj {
         Object::Integer(int) => {
             assert!(
                 *int == expected,
@@ -25,8 +25,8 @@ fn is_object_integer(obj: Rc<Object>, test: &str, expected: i64) -> bool {
     }
 }
 
-fn is_object_boolean(obj: Rc<Object>, test: &str, expected: bool) -> bool {
-    match &*obj {
+fn is_object_boolean(obj: &Object, test: &str, expected: bool) -> bool {
+    match obj {
         Object::Boolean(boolean) => {
             assert!(
                 *boolean == expected,
@@ -48,8 +48,8 @@ fn is_object_boolean(obj: Rc<Object>, test: &str, expected: bool) -> bool {
     }
 }
 
-fn is_object_string(obj: Rc<Object>, test: &str, expected: &str) -> bool {
-    match &*obj {
+fn is_object_string(obj: &Object, test: &str, expected: &str) -> bool {
+    match obj {
         Object::String(string) => {
             assert!(
                 string == expected,
@@ -96,7 +96,7 @@ fn test_eval_expression_integer() -> Result<(), EvalError> {
         let program = p.parse_program();
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
-        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
+        assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
 }
@@ -132,7 +132,7 @@ fn test_eval_expression_boolean() -> Result<(), EvalError> {
         let program = p.parse_program();
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
-        assert_eq!(is_object_boolean(evaluated, tt.0, tt.1), true);
+        assert_eq!(is_object_boolean(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
 }
@@ -148,7 +148,7 @@ fn test_eval_expression_string() -> Result<(), EvalError> {
         let program = p.parse_program();
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
-        assert_eq!(is_object_string(evaluated, tt.0, tt.1), true);
+        assert_eq!(is_object_string(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
 }
@@ -164,8 +164,31 @@ fn test_eval_expression_string_concatenation() -> Result<(), EvalError> {
         let program = p.parse_program();
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
-        assert_eq!(is_object_string(evaluated, tt.0, tt.1), true);
+        assert_eq!(is_object_string(&*evaluated, tt.0, tt.1), true);
     }
+    Ok(())
+}
+
+#[test]
+fn test_eval_expression_array() -> Result<(), EvalError> {
+    let input = "[1, 2*2, 3+3]";
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    let env = Environment::new();
+    let evaluated = eval(&program, Rc::clone(&env))?;
+    match &*evaluated {
+        Object::Array(array) => {
+            assert_eq!(array.len(), 3);
+            assert_eq!(is_object_integer(&*array[0], input, 1), true);
+            assert_eq!(is_object_integer(&*array[1], input, 4), true);
+            assert_eq!(is_object_integer(&*array[2], input, 6), true);
+        }
+        _ => assert!(false, "Object is not Array"),
+    };
+
     Ok(())
 }
 
@@ -187,7 +210,7 @@ fn test_eval_operator_bang() -> Result<(), EvalError> {
         let program = p.parse_program();
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
-        assert_eq!(is_object_boolean(evaluated, tt.0, tt.1), true);
+        assert_eq!(is_object_boolean(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
 }
@@ -212,7 +235,7 @@ fn test_eval_expression_ifelse() -> Result<(), EvalError> {
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
         if let Some(expected) = tt.1 {
-            assert_eq!(is_object_integer(evaluated, tt.0, expected), true);
+            assert_eq!(is_object_integer(&*evaluated, tt.0, expected), true);
         } else {
             assert_eq!(&*evaluated, &Object::Null);
         }
@@ -237,7 +260,7 @@ fn test_eval_statement_return() -> Result<(), EvalError> {
         let program = p.parse_program();
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
-        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
+        assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
 }
@@ -299,7 +322,7 @@ fn test_let_statements() -> Result<(), EvalError> {
         let program = p.parse_program();
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
-        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
+        assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
 }
@@ -343,7 +366,7 @@ fn test_function_application() -> Result<(), EvalError> {
         let program = p.parse_program();
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
-        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
+        assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
 }
@@ -363,7 +386,7 @@ fn test_builtin_functions() -> Result<(), EvalError> {
         let program = p.parse_program();
         let env = Environment::new();
         let evaluated = eval(&program, Rc::clone(&env))?;
-        assert_eq!(is_object_integer(evaluated, tt.0, tt.1), true);
+        assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
 }

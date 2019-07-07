@@ -19,6 +19,7 @@ enum Precedence {
     PRODUCT,     // *
     PREFIX,      // -X or !X
     CALL,        // myFunc(X)
+    INDEX,       // array[index]
 }
 
 #[inline]
@@ -29,6 +30,7 @@ fn token2precedence(token: &Token) -> Precedence {
         Token::PLUS | Token::MINUS => Precedence::SUM,
         Token::SLASH | Token::ASTERISK => Precedence::PRODUCT,
         Token::LPAREN => Precedence::CALL,
+        Token::LBRACKET => Precedence::INDEX,
         _ => Precedence::LOWEST,
     }
 }
@@ -142,6 +144,7 @@ impl<'a> Parser<'a> {
             | Token::SLASH
             | Token::ASTERISK => Some(Parser::parse_infix),
             Token::LPAREN => Some(Parser::parse_call),
+            Token::LBRACKET => Some(Parser::parse_index),
             _ => None,
         }
     }
@@ -306,6 +309,20 @@ impl<'a> Parser<'a> {
 
         if let Some(right) = parser.parse_expression(cur_precedence) {
             Some(Expression::Infix(Box::new(left), infix, Box::new(right)))
+        } else {
+            None
+        }
+    }
+
+    fn parse_index(parser: &mut Parser, left: Expression) -> Option<Expression> {
+        parser.next_token();
+
+        if let Some(right) = parser.parse_expression(Precedence::LOWEST) {
+            if !parser.expect_peek(&Token::RBRACKET) {
+                return None;
+            }
+
+            Some(Expression::Index(Box::new(left), Box::new(right)))
         } else {
             None
         }
