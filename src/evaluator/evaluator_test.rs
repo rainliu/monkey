@@ -156,6 +156,24 @@ fn test_eval_expression_string() -> Result<(), EvalError> {
 }
 
 #[test]
+fn test_eval_expression_string_concatenation() -> Result<(), EvalError> {
+    let tests = vec![
+        ("\"Hello\" + \" \" + \"World\"", "Hello World"),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let env = Environment::new();
+        let evaluated = eval(&program, Rc::clone(&env))?;
+        assert_eq!(is_object_string(evaluated, tt.0, tt.1), true);
+    }
+    Ok(())
+}
+
+#[test]
 fn test_eval_operator_bang() -> Result<(), EvalError> {
     let tests = vec![
         ("!true", false),
@@ -241,6 +259,7 @@ fn test_error_handling() -> Result<(), EvalError> {
             "if(10>1) { if(10>1) {return true+false;} return 1; }",
             "illegal operator: true + false",
         ),
+        ("\"Hello\" - \"World\"", "illegal operator: Hello - World"),
     ];
 
     for tt in tests {

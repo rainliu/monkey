@@ -32,7 +32,11 @@ pub enum Object {
     Boolean(bool),
     String(String),
     Return(Rc<Object>),
-    Function(Vec<IdentifierLiteral>, BlockStatement, Rc<RefCell<Environment>>),
+    Function(
+        Vec<IdentifierLiteral>,
+        BlockStatement,
+        Rc<RefCell<Environment>>,
+    ),
 }
 
 impl fmt::Display for Object {
@@ -251,6 +255,9 @@ fn eval_infix_expression(
         (Object::Integer(left), _, Object::Integer(right)) => {
             eval_integer_infix_expression(*left, infix, *right)
         }
+        (Object::String(left), _, Object::String(right)) => {
+            eval_string_infix_expression(left, infix, right)
+        }
         (_, &Infix::EQ, _) => Ok(Rc::new(Object::Boolean(*left == *right))),
         (_, &Infix::NEQ, _) => Ok(Rc::new(Object::Boolean(*left != *right))),
         _ => Err(EvalError {
@@ -273,6 +280,23 @@ fn eval_integer_infix_expression(
         &Infix::GT => Object::Boolean(left > right),
         &Infix::EQ => Object::Boolean(left == right),
         &Infix::NEQ => Object::Boolean(left != right),
+    };
+
+    Ok(Rc::new(obj))
+}
+
+fn eval_string_infix_expression(
+    left: &str,
+    infix: &Infix,
+    right: &str,
+) -> Result<Rc<Object>, EvalError> {
+    let obj = match infix {
+        &Infix::PLUS => Object::String(left.to_string() + right),
+        _ => {
+            return Err(EvalError {
+                message: format!("illegal operator: {} {} {}", left, infix, right),
+            })
+        }
     };
 
     Ok(Rc::new(obj))
