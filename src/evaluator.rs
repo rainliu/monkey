@@ -28,12 +28,20 @@ impl std::error::Error for EvalError {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Builtin {
     Len,
+    First,
+    Last,
+    Rest,
+    Push,
 }
 
 impl Builtin {
     pub fn lookup(name: &str) -> Option<Rc<Object>> {
         match name {
             "len" => Some(Rc::new(Object::Builtin(Builtin::Len))),
+            "first" => Some(Rc::new(Object::Builtin(Builtin::First))),
+            "last" => Some(Rc::new(Object::Builtin(Builtin::Last))),
+            "rest" => Some(Rc::new(Object::Builtin(Builtin::Rest))),
+            "push" => Some(Rc::new(Object::Builtin(Builtin::Push))),
             _ => None,
         }
     }
@@ -48,9 +56,99 @@ impl Builtin {
                 }
 
                 match &*args[0] {
+                    Object::Array(array) => Ok(Rc::new(Object::Integer(array.len() as i64))),
                     Object::String(string) => Ok(Rc::new(Object::Integer(string.len() as i64))),
                     _ => Err(EvalError {
                         message: format!("argument to \"len\" not supported, got {}", args[0]),
+                    }),
+                }
+            }
+            Builtin::First => {
+                if args.len() != 1 {
+                    return Err(EvalError {
+                        message: format!("wrong number of arguments. got={}, want=1", args.len()),
+                    });
+                }
+
+                match &*args[0] {
+                    Object::Array(array) => {
+                        if array.len() > 0 {
+                            Ok(Rc::clone(&array[0]))
+                        } else {
+                            Ok(Rc::new(Object::Null))
+                        }
+                    }
+                    _ => Err(EvalError {
+                        message: format!("argument to \"first\" not supported, got {}", args[0]),
+                    }),
+                }
+            }
+            Builtin::Last => {
+                if args.len() != 1 {
+                    return Err(EvalError {
+                        message: format!("wrong number of arguments. got={}, want=1", args.len()),
+                    });
+                }
+
+                match &*args[0] {
+                    Object::Array(array) => {
+                        if array.len() > 0 {
+                            Ok(Rc::clone(&array[array.len() - 1]))
+                        } else {
+                            Ok(Rc::new(Object::Null))
+                        }
+                    }
+                    _ => Err(EvalError {
+                        message: format!("argument to \"last\" not supported, got {}", args[0]),
+                    }),
+                }
+            }
+            Builtin::Rest => {
+                if args.len() != 1 {
+                    return Err(EvalError {
+                        message: format!("wrong number of arguments. got={}, want=1", args.len()),
+                    });
+                }
+
+                match &*args[0] {
+                    Object::Array(array) => {
+                        if array.len() > 0 {
+                            let mut rest = vec![];
+                            for i in 1..array.len() {
+                                rest.push(Rc::new((*array[i]).clone()));
+                            }
+                            Ok(Rc::new(Object::Array(rest)))
+                        } else {
+                            Ok(Rc::new(Object::Null))
+                        }
+                    }
+                    _ => Err(EvalError {
+                        message: format!("argument to \"rest\" not supported, got {}", args[0]),
+                    }),
+                }
+            }
+            Builtin::Push => {
+                if args.len() != 2 {
+                    return Err(EvalError {
+                        message: format!("wrong number of arguments. got={}, want=2", args.len()),
+                    });
+                }
+
+                match &*args[0] {
+                    Object::Array(array) => {
+                        if array.len() > 0 {
+                            let mut push = vec![];
+                            for i in 0..array.len() {
+                                push.push(Rc::new((*array[i]).clone()));
+                            }
+                            push.push(Rc::new((*args[1]).clone()));
+                            Ok(Rc::new(Object::Array(push)))
+                        } else {
+                            Ok(Rc::new(Object::Null))
+                        }
+                    }
+                    _ => Err(EvalError {
+                        message: format!("argument to \"push\" not supported, got {}", args[0]),
                     }),
                 }
             }
