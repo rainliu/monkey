@@ -3,6 +3,7 @@ use std::iter::Peekable;
 use crate::ast::*;
 use crate::lexer::*;
 use crate::token::*;
+use std::collections::HashMap;
 
 #[cfg(test)]
 mod parser_test;
@@ -126,6 +127,7 @@ impl<'a> Parser<'a> {
             Token::BANG | Token::MINUS => Some(Parser::parse_prefix),
             Token::TRUE | Token::FALSE => Some(Parser::parse_boolean),
             Token::LPAREN => Some(Parser::parse_parenthesis),
+            Token::LBRACE => Some(Parser::parse_hash),
             Token::IF => Some(Parser::parse_if),
             Token::FUNCTION => Some(Parser::parse_function),
             _ => None,
@@ -199,6 +201,48 @@ impl<'a> Parser<'a> {
         }
 
         expr
+    }
+
+    fn parse_hash(parser: &mut Parser) -> Option<Expression> {
+        let mut hash = HashLiteral {
+            pairs: HashMap::new(),
+        };
+
+        while let Some(token) = parser.lexer.peek() {
+            if *token == Token::RBRACE {
+                break;
+            }
+
+            parser.next_token();
+            let key = parser.parse_expression(Precedence::LOWEST);
+            if key.is_none() {
+                return None;
+            }
+
+            if !parser.expect_peek(&Token::COLON) {
+                return None;
+            }
+
+            parser.next_token();
+            let value = parser.parse_expression(Precedence::LOWEST);
+            if value.is_none() {
+                return None;
+            }
+
+            hash.pairs.insert(key.unwrap(), value.unwrap());
+
+            if let Some(token) = parser.lexer.peek() {
+                if *token != Token::RBRACE && !parser.expect_peek(&Token::COMMA) {
+                    return None;
+                }
+            }
+        }
+
+        if !parser.expect_peek(&Token::RBRACE) {
+            return None;
+        }
+
+        Some(Expression::Hash(hash))
     }
 
     fn parse_if(parser: &mut Parser) -> Option<Expression> {

@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::HashMap;
 
 fn check_parser_errors(p: &Parser) {
     let errors = p.errors();
@@ -236,6 +237,50 @@ fn test_expression_string() {
             Statement::Expression(expr) => match expr {
                 Expression::String(string) => assert_eq!(string, "hello world"),
                 _ => assert!(false, "Expression is not String"),
+            },
+            _ => assert!(false, "Statement is not Expression"),
+        };
+    }
+}
+
+#[test]
+fn test_expression_hash() {
+    let input = "{\"one\": 1, \"two\":2, \"three\":3}";
+    let expected: HashMap<String, i64> = [
+        ("one".to_string(), 1),
+        ("two".to_string(), 2),
+        ("three".to_string(), 3),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+    assert_eq!(program.statements.len(), 1);
+
+    for stmt in &program.statements {
+        match stmt {
+            Statement::Expression(expr) => match expr {
+                Expression::Hash(hash) => {
+                    assert_eq!(hash.pairs.len(), 3);
+                    for (key, value) in &hash.pairs {
+                        match key {
+                            Expression::String(string) => {
+                                if let Some(expected_value) = expected.get(string) {
+                                    assert_eq!(is_expression_integer(value, *expected_value), true);
+                                } else {
+                                    assert!(false, "{} is not expected", string);
+                                }
+                            }
+                            _ => assert!(false, "{} is not String", *key),
+                        };
+                    }
+                }
+                _ => assert!(false, "Expression is not Hash"),
             },
             _ => assert!(false, "Statement is not Expression"),
         };

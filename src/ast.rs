@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 #[cfg(test)]
 mod ast_test;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Statement {
     Let(String, Expression),
     Return(Expression),
@@ -23,7 +25,7 @@ impl fmt::Display for Statement {
 
 pub type BlockStatement = Program;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Expression {
     Identifier(String),
     Integer(i64),
@@ -31,6 +33,7 @@ pub enum Expression {
     String(String),
     Array(Vec<Expression>),
     Index(Box<Expression>, Box<Expression>),
+    Hash(HashLiteral),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
     If(Box<Expression>, BlockStatement, Option<BlockStatement>),
@@ -51,6 +54,7 @@ impl fmt::Display for Expression {
                 format!("[{}]", elements.join(", "))
             }
             Expression::Index(left, right) => format!("({}[{}])", *left, *right),
+            Expression::Hash(hash) => format!("{}", *hash),
             Expression::Prefix(prefix, right) => format!("({}{})", prefix, *right),
             Expression::Infix(left, infix, right) => format!("({} {} {})", *left, infix, *right),
             Expression::If(condition, consequence, alternative) => {
@@ -74,7 +78,7 @@ impl fmt::Display for Expression {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }
@@ -97,7 +101,7 @@ impl Program {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Prefix {
     MINUS, // -
     BANG,  // !
@@ -116,7 +120,7 @@ impl fmt::Display for Prefix {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Infix {
     PLUS,     // +
     MINUS,    // -
@@ -144,5 +148,26 @@ impl fmt::Display for Infix {
                 Infix::NEQ => "!=",
             }
         )
+    }
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct HashLiteral {
+    pub pairs: HashMap<Expression, Expression>,
+}
+
+impl Hash for HashLiteral {
+    fn hash<H: Hasher>(&self, _state: &mut H) {
+        panic!("hash not implemented for HashLiteral");
+    }
+}
+
+impl fmt::Display for HashLiteral {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let pairs: Vec<String> = (&self.pairs)
+            .iter()
+            .map(|(k, v)| format!("{}:{}", k.to_string(), v.to_string()))
+            .collect();
+        write!(f, "{{{}}}", pairs.join(", "))
     }
 }

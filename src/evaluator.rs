@@ -352,9 +352,10 @@ fn eval_expression(
             let array = eval_expression(left, Rc::clone(&env))?;
             let index = eval_expression(right, env)?;
             eval_index_expression(array, index)
-        } /*_ => Err(EvalError {
-              message: format!("to be implemented {}", expr),
-          }),*/
+        }
+        _ => Err(EvalError {
+            message: format!("to be implemented {}", expr),
+        }),
     }
 }
 
