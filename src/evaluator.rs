@@ -167,6 +167,7 @@ pub enum Object {
     Return(Rc<Object>),
     Function(Function),
     Builtin(Builtin),
+    Hash(HashObject),
 }
 
 impl fmt::Display for Object {
@@ -184,6 +185,7 @@ impl fmt::Display for Object {
             Object::Return(object) => format!("{}", object),
             Object::Function(function) => format!("{}", function),
             Object::Builtin(builtin) => format!("{:?}", builtin),
+            Object::Hash(hash) => format!("{}", hash),
         };
         write!(f, "{}", s)
     }
@@ -209,8 +211,28 @@ impl fmt::Display for Function {
 
 impl Hash for Function {
     fn hash<H: Hasher>(&self, _state: &mut H) {
-        // we should never hash an array so should be fine
         panic!("hash for function not supported");
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct HashObject {
+    pub pairs: HashMap<Rc<Object>, Rc<Object>>,
+}
+
+impl fmt::Display for HashObject {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let pairs: Vec<String> = (&self.pairs)
+            .iter()
+            .map(|(key, value)| format!("{}: {}", key.to_string(), value.to_string()))
+            .collect();
+        write!(f, "{{{}}}", pairs.join(", "))
+    }
+}
+
+impl Hash for HashObject {
+    fn hash<H: Hasher>(&self, _state: &mut H) {
+        panic!("hash for HashObject not supported");
     }
 }
 
