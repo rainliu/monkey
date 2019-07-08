@@ -381,10 +381,10 @@ fn test_function_object() -> Result<(), EvalError> {
     let env = Environment::new();
     let evaluated = eval(&program, env)?;
     match &*evaluated {
-        Object::Function(parameters, body, _env) => {
-            assert_eq!(parameters.len(), 1);
-            assert_eq!(parameters[0], "x");
-            assert_eq!(body.to_string(), "(x + 2)")
+        Object::Function(function) => {
+            assert_eq!(function.parameters.len(), 1);
+            assert_eq!(function.parameters[0], "x");
+            assert_eq!(function.body.to_string(), "(x + 2)")
         }
         _ => assert!(false, "object is not Function. got {}", evaluated),
     };

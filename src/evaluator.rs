@@ -3,6 +3,7 @@ use crate::ast::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 #[cfg(test)]
@@ -25,7 +26,7 @@ impl std::error::Error for EvalError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Builtin {
     Len,
     First,
@@ -156,7 +157,7 @@ impl Builtin {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Object {
     Null,
     Integer(i64),
@@ -164,7 +165,7 @@ pub enum Object {
     String(String),
     Array(Vec<Rc<Object>>),
     Return(Rc<Object>),
-    Function(Vec<String>, BlockStatement, Rc<RefCell<Environment>>),
+    Function(Function),
     Builtin(Builtin),
 }
 
@@ -181,18 +182,39 @@ impl fmt::Display for Object {
                 format!("[{}]", elements.join(", "))
             }
             Object::Return(object) => format!("{}", object),
-            Object::Function(parameters, body, _env) => {
-                let params: Vec<String> =
-                    parameters.iter().map(|param| param.to_string()).collect();
-                format!("fn({}) {{\n{}\n}}", params.join(", "), *body)
-            }
+            Object::Function(function) => format!("{}", function),
             Object::Builtin(builtin) => format!("{:?}", builtin),
         };
         write!(f, "{}", s)
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Function {
+    pub parameters: Vec<String>,
+    pub body: BlockStatement,
+    pub env: Rc<RefCell<Environment>>,
+}
+
+impl fmt::Display for Function {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let params: Vec<String> = self
+            .parameters
+            .iter()
+            .map(|param| param.to_string())
+            .collect();
+        write!(f, "fn({}) {{\n{}\n}}", params.join(", "), self.body)
+    }
+}
+
+impl Hash for Function {
+    fn hash<H: Hasher>(&self, _state: &mut H) {
+        // we should never hash an array so should be fine
+        panic!("hash for function not supported");
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Environment {
     store: HashMap<String, Rc<Object>>,
     outer: Option<Rc<RefCell<Environment>>>,
@@ -334,11 +356,11 @@ fn eval_expression(
                 Ok(Rc::new(Object::Null))
             }
         }
-        Expression::Function(parameters, body) => Ok(Rc::new(Object::Function(
-            parameters.clone(),
-            body.clone(),
+        Expression::Function(parameters, body) => Ok(Rc::new(Object::Function(Function {
+            parameters: parameters.clone(),
+            body: body.clone(),
             env,
-        ))),
+        }))),
         Expression::Call(function, arguments) => {
             let function = eval_expression(function, Rc::clone(&env))?;
             let args = eval_expressions(arguments, env)?;
@@ -474,12 +496,12 @@ fn eval_array_index_expression(array: &[Rc<Object>], index: i64) -> Result<Rc<Ob
 
 fn apply_function(function: Rc<Object>, args: Vec<Rc<Object>>) -> Result<Rc<Object>, EvalError> {
     match &*function {
-        Object::Function(parameters, body, env) => {
-            let extended_env = Environment::from(Rc::clone(env));
-            for (param, arg) in parameters.iter().zip(args.iter()) {
+        Object::Function(function) => {
+            let extended_env = Environment::from(Rc::clone(&function.env));
+            for (param, arg) in function.parameters.iter().zip(args.iter()) {
                 extended_env.borrow_mut().set(param.clone(), arg.clone());
             }
-            let evaluated = eval(&body, extended_env)?;
+            let evaluated = eval(&function.body, extended_env)?;
             match &*evaluated {
                 Object::Return(obj) => Ok(Rc::clone(obj)),
                 _ => Ok(evaluated),
