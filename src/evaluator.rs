@@ -164,11 +164,7 @@ pub enum Object {
     String(String),
     Array(Vec<Rc<Object>>),
     Return(Rc<Object>),
-    Function(
-        Vec<IdentifierLiteral>,
-        BlockStatement,
-        Rc<RefCell<Environment>>,
-    ),
+    Function(Vec<String>, BlockStatement, Rc<RefCell<Environment>>),
     Builtin(Builtin),
 }
 
@@ -287,7 +283,7 @@ fn eval_statement(
     match stmt {
         Statement::Let(ident, expr) => {
             let obj = eval_expression(expr, Rc::clone(&env))?;
-            env.borrow_mut().set(ident.0.clone(), Rc::clone(&obj));
+            env.borrow_mut().set(ident.clone(), Rc::clone(&obj));
             Ok(obj)
         }
         Statement::Return(expr) => {
@@ -304,11 +300,11 @@ fn eval_expression(
 ) -> Result<Rc<Object>, EvalError> {
     match expr {
         Expression::Identifier(ident) => {
-            if let Some(obj) = env.borrow().get(&ident.0) {
+            if let Some(obj) = env.borrow().get(&ident) {
                 return Ok(obj);
             }
 
-            if let Some(obj) = Builtin::lookup(&ident.0) {
+            if let Some(obj) = Builtin::lookup(&ident) {
                 return Ok(obj);
             }
 
@@ -316,9 +312,9 @@ fn eval_expression(
                 message: format!("identifier not found: {}", ident),
             })
         }
-        Expression::Integer(int) => Ok(Rc::new(Object::Integer(int.0))),
-        Expression::Boolean(boolean) => Ok(Rc::new(Object::Boolean(boolean.0))),
-        Expression::String(string) => Ok(Rc::new(Object::String(string.0.clone()))),
+        Expression::Integer(integer) => Ok(Rc::new(Object::Integer(*integer))),
+        Expression::Boolean(boolean) => Ok(Rc::new(Object::Boolean(*boolean))),
+        Expression::String(string) => Ok(Rc::new(Object::String(string.to_string()))),
         Expression::Prefix(prefix, right) => {
             let right = eval_expression(right, env)?;
             eval_prefix_expression(prefix, right)
@@ -393,7 +389,7 @@ fn eval_bang_operator_expression(right: Rc<Object>) -> Result<Rc<Object>, EvalEr
 
 fn eval_minus_operator_expression(right: Rc<Object>) -> Result<Rc<Object>, EvalError> {
     match &*right {
-        Object::Integer(int) => Ok(Rc::new(Object::Integer(-*int))),
+        Object::Integer(integer) => Ok(Rc::new(Object::Integer(-*integer))),
         _ => Err(EvalError {
             message: format!("illegal operator: -{}", right),
         }),
@@ -480,7 +476,7 @@ fn apply_function(function: Rc<Object>, args: Vec<Rc<Object>>) -> Result<Rc<Obje
         Object::Function(parameters, body, env) => {
             let extended_env = Environment::from(Rc::clone(env));
             for (param, arg) in parameters.iter().zip(args.iter()) {
-                extended_env.borrow_mut().set(param.0.clone(), arg.clone());
+                extended_env.borrow_mut().set(param.clone(), arg.clone());
             }
             let evaluated = eval(&body, extended_env)?;
             match &*evaluated {

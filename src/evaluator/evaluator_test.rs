@@ -4,9 +4,9 @@ use crate::parser::*;
 
 fn is_object_integer(obj: &Object, test: &str, expected: i64) -> bool {
     match obj {
-        Object::Integer(int) => {
+        Object::Integer(integer) => {
             assert!(
-                *int == expected,
+                *integer == expected,
                 "Eval {}, expected Integer({}), but got {}",
                 test,
                 expected,
@@ -383,7 +383,7 @@ fn test_function_object() -> Result<(), EvalError> {
     match &*evaluated {
         Object::Function(parameters, body, _env) => {
             assert_eq!(parameters.len(), 1);
-            assert_eq!(parameters[0].0, "x");
+            assert_eq!(parameters[0], "x");
             assert_eq!(body.to_string(), "(x + 2)")
         }
         _ => assert!(false, "object is not Function. got {}", evaluated),

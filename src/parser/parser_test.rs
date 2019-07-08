@@ -16,7 +16,7 @@ fn check_parser_errors(p: &Parser) {
 fn is_statement_let(stmt: &Statement, name: &str) -> bool {
     match stmt {
         Statement::Let(ident, _expr) => {
-            assert_eq!(ident.0, name);
+            assert_eq!(ident, name);
             true
         }
         _ => false,
@@ -25,8 +25,8 @@ fn is_statement_let(stmt: &Statement, name: &str) -> bool {
 
 fn is_expression_integer(expr: &Expression, value: i64) -> bool {
     match expr {
-        Expression::Integer(int) => {
-            assert_eq!(int.0, value);
+        Expression::Integer(integer) => {
+            assert_eq!(*integer, value);
             true
         }
         _ => false,
@@ -36,7 +36,7 @@ fn is_expression_integer(expr: &Expression, value: i64) -> bool {
 fn is_expression_identifier(expr: &Expression, value: &str) -> bool {
     match expr {
         Expression::Identifier(ident) => {
-            assert_eq!(ident.0, value);
+            assert_eq!(ident, value);
             true
         }
         _ => false,
@@ -46,7 +46,7 @@ fn is_expression_identifier(expr: &Expression, value: &str) -> bool {
 fn is_expression_boolean(expr: &Expression, value: bool) -> bool {
     match expr {
         Expression::Boolean(boolean) => {
-            assert_eq!(boolean.0, value);
+            assert_eq!(*boolean, value);
             true
         }
         _ => false,
@@ -77,15 +77,15 @@ fn is_expression_infix(
 }
 
 enum Literal {
-    Int(i64),
-    Ident(String),
+    Integer(i64),
+    Identifier(String),
     Boolean(bool),
 }
 
 fn is_expression_literal(expr: &Expression, expected: &Literal) -> bool {
     match expected {
-        Literal::Int(int) => is_expression_integer(expr, *int),
-        Literal::Ident(ident) => is_expression_identifier(expr, ident),
+        Literal::Integer(integer) => is_expression_integer(expr, *integer),
+        Literal::Identifier(identifier) => is_expression_identifier(expr, identifier),
         Literal::Boolean(boolean) => is_expression_boolean(expr, *boolean),
     }
 }
@@ -113,9 +113,13 @@ fn test_statement_let() {
 #[test]
 fn test_statement_lets() {
     let tests = vec![
-        ("let x = 5;", "x", Literal::Int(5)),
+        ("let x = 5;", "x", Literal::Integer(5)),
         ("let y = true;", "y", Literal::Boolean(true)),
-        ("let foobar = y", "foobar", Literal::Ident("y".to_string())),
+        (
+            "let foobar = y",
+            "foobar",
+            Literal::Identifier("y".to_string()),
+        ),
     ];
 
     for tt in tests {
@@ -129,7 +133,7 @@ fn test_statement_lets() {
         let stmt = &program.statements[0];
         match stmt {
             Statement::Let(ident, expr) => {
-                assert_eq!(ident.0, tt.1);
+                assert_eq!(ident, tt.1);
                 assert_eq!(is_expression_literal(expr, &tt.2), true);
             }
             _ => assert!(false, "Statement is not Let"),
@@ -186,7 +190,7 @@ fn test_expression_identifier() {
     for stmt in &program.statements {
         match stmt {
             Statement::Expression(expr) => match expr {
-                Expression::Identifier(ident) => assert_eq!(ident.0, "foobar"),
+                Expression::Identifier(ident) => assert_eq!(ident, "foobar"),
                 _ => assert!(false, "Expression is not Ident"),
             },
             _ => assert!(false, "Statement is not Expression"),
@@ -208,7 +212,7 @@ fn test_expression_integer() {
     for stmt in &program.statements {
         match stmt {
             Statement::Expression(expr) => match expr {
-                Expression::Integer(int) => assert_eq!(int.0, 5),
+                Expression::Integer(integer) => assert_eq!(*integer, 5),
                 _ => assert!(false, "Expression is not Int"),
             },
             _ => assert!(false, "Statement is not Expression"),
@@ -230,7 +234,7 @@ fn test_expression_string() {
     for stmt in &program.statements {
         match stmt {
             Statement::Expression(expr) => match expr {
-                Expression::String(string) => assert_eq!(string.0, "hello world"),
+                Expression::String(string) => assert_eq!(string, "hello world"),
                 _ => assert!(false, "Expression is not String"),
             },
             _ => assert!(false, "Statement is not Expression"),
@@ -254,22 +258,22 @@ fn test_expression_array() {
             Statement::Expression(expr) => match expr {
                 Expression::Array(array) => {
                     assert_eq!(array.len(), 3);
-                    assert_eq!(is_expression_literal(&array[0], &Literal::Int(1)), true);
+                    assert_eq!(is_expression_literal(&array[0], &Literal::Integer(1)), true);
                     assert_eq!(
                         is_expression_infix(
                             &array[1],
-                            &Literal::Int(2),
+                            &Literal::Integer(2),
                             &Infix::ASTERISK,
-                            &Literal::Int(2)
+                            &Literal::Integer(2)
                         ),
                         true
                     );
                     assert_eq!(
                         is_expression_infix(
                             &array[2],
-                            &Literal::Int(3),
+                            &Literal::Integer(3),
                             &Infix::PLUS,
-                            &Literal::Int(3)
+                            &Literal::Integer(3)
                         ),
                         true
                     );
@@ -299,9 +303,9 @@ fn test_expression_if() {
                     assert_eq!(
                         is_expression_infix(
                             condition,
-                            &Literal::Ident("x".to_string()),
+                            &Literal::Identifier("x".to_string()),
                             &Infix::LT,
-                            &Literal::Ident("y".to_string())
+                            &Literal::Identifier("y".to_string())
                         ),
                         true
                     );
@@ -309,7 +313,7 @@ fn test_expression_if() {
                     if let Some(stmt) = consequence.statements.first() {
                         match stmt {
                             Statement::Expression(expr) => assert_eq!(
-                                is_expression_literal(expr, &Literal::Ident("x".to_string())),
+                                is_expression_literal(expr, &Literal::Identifier("x".to_string())),
                                 true
                             ),
                             _ => assert!(false, "Statement is not Expression"),
@@ -345,9 +349,9 @@ fn test_expression_ifelse() {
                     assert_eq!(
                         is_expression_infix(
                             condition,
-                            &Literal::Ident("x".to_string()),
+                            &Literal::Identifier("x".to_string()),
                             &Infix::LT,
-                            &Literal::Ident("y".to_string())
+                            &Literal::Identifier("y".to_string())
                         ),
                         true
                     );
@@ -355,7 +359,7 @@ fn test_expression_ifelse() {
                     if let Some(stmt) = consequence.statements.first() {
                         match stmt {
                             Statement::Expression(expr) => assert_eq!(
-                                is_expression_literal(expr, &Literal::Ident("x".to_string())),
+                                is_expression_literal(expr, &Literal::Identifier("x".to_string())),
                                 true
                             ),
                             _ => assert!(false, "Statement is not Expression"),
@@ -367,7 +371,7 @@ fn test_expression_ifelse() {
                                     Statement::Expression(expr) => assert_eq!(
                                         is_expression_literal(
                                             expr,
-                                            &Literal::Ident("y".to_string())
+                                            &Literal::Identifier("y".to_string())
                                         ),
                                         true
                                     ),
@@ -406,17 +410,17 @@ fn test_expression_function() {
             Statement::Expression(expr) => match expr {
                 Expression::Function(parameters, body) => {
                     assert_eq!(parameters.len(), 2);
-                    assert_eq!(parameters[0], IdentifierLiteral("x".to_string()));
-                    assert_eq!(parameters[1], IdentifierLiteral("y".to_string()));
+                    assert_eq!(parameters[0], "x");
+                    assert_eq!(parameters[1], "y");
                     assert_eq!(body.statements.len(), 1);
                     if let Some(stmt) = body.statements.first() {
                         match stmt {
                             Statement::Expression(expr) => assert_eq!(
                                 is_expression_infix(
                                     expr,
-                                    &Literal::Ident("x".to_string()),
+                                    &Literal::Identifier("x".to_string()),
                                     &Infix::PLUS,
-                                    &Literal::Ident("y".to_string())
+                                    &Literal::Identifier("y".to_string())
                                 ),
                                 true
                             ),
@@ -437,15 +441,8 @@ fn test_expression_function() {
 fn test_expression_function_parameters() {
     let tests = vec![
         ("fn() {};", vec![]),
-        ("fn(x) {};", vec![IdentifierLiteral("x".to_string())]),
-        (
-            "fn(x,y,z) {x+y;}",
-            vec![
-                IdentifierLiteral("x".to_string()),
-                IdentifierLiteral("y".to_string()),
-                IdentifierLiteral("z".to_string()),
-            ],
-        ),
+        ("fn(x) {};", vec!["x"]),
+        ("fn(x,y,z) {x+y;}", vec!["x", "y", "z"]),
     ];
 
     for tt in tests {
@@ -488,31 +485,31 @@ fn test_expression_call() {
             Statement::Expression(expr) => match expr {
                 Expression::Call(function, arguments) => {
                     assert_eq!(
-                        is_expression_literal(function, &Literal::Ident("add".to_string())),
+                        is_expression_literal(function, &Literal::Identifier("add".to_string())),
                         true
                     );
 
                     assert_eq!(arguments.len(), 3);
 
                     assert_eq!(
-                        is_expression_literal(&arguments[0], &Literal::Int(1),),
+                        is_expression_literal(&arguments[0], &Literal::Integer(1),),
                         true
                     );
                     assert_eq!(
                         is_expression_infix(
                             &arguments[1],
-                            &Literal::Int(2),
+                            &Literal::Integer(2),
                             &Infix::ASTERISK,
-                            &Literal::Int(3)
+                            &Literal::Integer(3)
                         ),
                         true
                     );
                     assert_eq!(
                         is_expression_infix(
                             &arguments[2],
-                            &Literal::Int(4),
+                            &Literal::Integer(4),
                             &Infix::PLUS,
-                            &Literal::Int(5)
+                            &Literal::Integer(5)
                         ),
                         true
                     );
@@ -527,8 +524,8 @@ fn test_expression_call() {
 #[test]
 fn test_parsing_prefix_expressions() {
     let prefix_tests = vec![
-        ("!5;", "!", Literal::Int(5)),
-        ("-15", "-", Literal::Int(15)),
+        ("!5;", "!", Literal::Integer(5)),
+        ("-15", "-", Literal::Integer(15)),
         ("!true", "!", Literal::Boolean(true)),
         ("!false", "!", Literal::Boolean(false)),
     ];
@@ -559,14 +556,14 @@ fn test_parsing_prefix_expressions() {
 #[test]
 fn test_parsing_infix_expressions() {
     let infix_tests = vec![
-        ("5+5;", Literal::Int(5), "+", Literal::Int(5)),
-        ("5-5;", Literal::Int(5), "-", Literal::Int(5)),
-        ("5*5;", Literal::Int(5), "*", Literal::Int(5)),
-        ("5/5;", Literal::Int(5), "/", Literal::Int(5)),
-        ("5>5;", Literal::Int(5), ">", Literal::Int(5)),
-        ("5<5;", Literal::Int(5), "<", Literal::Int(5)),
-        ("5==5;", Literal::Int(5), "==", Literal::Int(5)),
-        ("5!=5;", Literal::Int(5), "!=", Literal::Int(5)),
+        ("5+5;", Literal::Integer(5), "+", Literal::Integer(5)),
+        ("5-5;", Literal::Integer(5), "-", Literal::Integer(5)),
+        ("5*5;", Literal::Integer(5), "*", Literal::Integer(5)),
+        ("5/5;", Literal::Integer(5), "/", Literal::Integer(5)),
+        ("5>5;", Literal::Integer(5), ">", Literal::Integer(5)),
+        ("5<5;", Literal::Integer(5), "<", Literal::Integer(5)),
+        ("5==5;", Literal::Integer(5), "==", Literal::Integer(5)),
+        ("5!=5;", Literal::Integer(5), "!=", Literal::Integer(5)),
         (
             "true==true",
             Literal::Boolean(true),

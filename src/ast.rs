@@ -5,7 +5,7 @@ mod ast_test;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
-    Let(IdentifierLiteral, Expression),
+    Let(String, Expression),
     Return(Expression),
     Expression(Expression),
 }
@@ -25,16 +25,16 @@ pub type BlockStatement = Program;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    Identifier(IdentifierLiteral),
-    Integer(IntegerLiteral),
-    Boolean(BooleanLiteral),
-    String(StringLiteral),
+    Identifier(String),
+    Integer(i64),
+    Boolean(bool),
+    String(String),
     Array(Vec<Expression>),
     Index(Box<Expression>, Box<Expression>),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
     If(Box<Expression>, BlockStatement, Option<BlockStatement>),
-    Function(Vec<IdentifierLiteral>, BlockStatement),
+    Function(Vec<String>, BlockStatement),
     Call(Box<Expression>, Vec<Expression>),
 }
 
@@ -98,33 +98,6 @@ impl Program {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct IdentifierLiteral(pub String);
-
-impl fmt::Display for IdentifierLiteral {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct IntegerLiteral(pub i64);
-
-impl fmt::Display for IntegerLiteral {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct StringLiteral(pub String);
-
-impl fmt::Display for StringLiteral {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub enum Prefix {
     MINUS, // -
     BANG,  // !
@@ -171,14 +144,5 @@ impl fmt::Display for Infix {
                 Infix::NEQ => "!=",
             }
         )
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct BooleanLiteral(pub bool);
-
-impl fmt::Display for BooleanLiteral {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
