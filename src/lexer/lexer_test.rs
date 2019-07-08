@@ -164,7 +164,9 @@ fn test_next_token_string() {
 
 #[test]
 fn test_next_token_bracket() {
-    let input = "[1,2];";
+    let input = "[1,2];
+        {\"foo\": \"bar\"}
+    ";
 
     let tests = vec![
         Token::LBRACKET,
@@ -173,6 +175,11 @@ fn test_next_token_bracket() {
         Token::INT("2".to_string()),
         Token::RBRACKET,
         Token::SEMICOLON,
+        Token::LBRACE,
+        Token::STRING("foo".to_string()),
+        Token::COLON,
+        Token::STRING("bar".to_string()),
+        Token::RBRACE,
         Token::EOF,
     ];
 
