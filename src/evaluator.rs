@@ -397,9 +397,10 @@ fn eval_expression(
             let index = eval_expression(right, env)?;
             eval_index_expression(array, index)
         }
-        _ => Err(EvalError {
-            message: format!("to be implemented {}", expr),
-        }),
+        Expression::Hash(hash_literal) => eval_hash_expression(hash_literal, env),
+        //_ => Err(EvalError {
+        //    message: format!("to be implemented {}", expr),
+        //}),
     }
 }
 
@@ -470,6 +471,21 @@ fn eval_index_expression(array: Rc<Object>, index: Rc<Object>) -> Result<Rc<Obje
             message: format!("index operator not supported: {}", array),
         }),
     }
+}
+
+fn eval_hash_expression(
+    hash_literal: &HashLiteral,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
+    let mut pairs: HashMap<Rc<Object>, Rc<Object>> = HashMap::new();
+
+    for (key, val) in &hash_literal.pairs {
+        let key = eval_expression(key, Rc::clone(&env))?;
+        let val = eval_expression(val, Rc::clone(&env))?;
+        pairs.insert(key, val);
+    }
+
+    Ok(Rc::new(Object::Hash(HashObject { pairs })))
 }
 
 fn eval_integer_infix_expression(

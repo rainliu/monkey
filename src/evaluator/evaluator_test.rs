@@ -457,3 +457,45 @@ fn test_illegal_builtin_functions() -> Result<(), EvalError> {
     }
     Ok(())
 }
+
+#[test]
+fn test_hash_object() -> Result<(), EvalError> {
+    let input = "let two = \"two\";
+        {
+            \"one\": 10 - 9,
+            two: 1+1,
+            4:4,
+            true: 5,
+            false: 6
+        }
+    ";
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    let env = Environment::new();
+    let evaluated = eval(&program, env)?;
+    match &*evaluated {
+        Object::Hash(hash_object) => {
+            assert_eq!(hash_object.pairs.len(), 5);
+            for (key, val) in hash_object.pairs.iter() {
+                match &**key {
+                    Object::String(string) => {
+                        match string.as_str() {
+                            "one" => assert_eq!(is_object_integer(val, input, 1), true),
+                            "two" => assert_eq!(is_object_integer(val, input, 2), true),
+                            _ => assert!(false, "{} not found in {}", string, input),
+                        };
+                    }
+                    Object::Integer(4) => assert_eq!(is_object_integer(val, input, 4), true),
+                    Object::Boolean(true) => assert_eq!(is_object_integer(val, input, 5), true),
+                    Object::Boolean(false) => assert_eq!(is_object_integer(val, input, 6), true),
+                    _ => assert!(false, "{}: {} not found in {}", key, val, input),
+                };
+            }
+        }
+        _ => assert!(false, "object is not Hash. got {}", evaluated),
+    };
+    Ok(())
+}
