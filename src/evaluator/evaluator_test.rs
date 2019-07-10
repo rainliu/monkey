@@ -95,7 +95,7 @@ fn test_eval_expression_integer() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
@@ -131,7 +131,7 @@ fn test_eval_expression_boolean() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         assert_eq!(is_object_boolean(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
@@ -147,7 +147,7 @@ fn test_eval_expression_string() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         assert_eq!(is_object_string(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
@@ -163,7 +163,7 @@ fn test_eval_expression_string_concatenation() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         assert_eq!(is_object_string(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
@@ -178,7 +178,7 @@ fn test_eval_expression_array() -> Result<(), EvalError> {
 
     let program = p.parse_program();
     let env = Environment::new();
-    let evaluated = eval(&program, Rc::clone(&env))?;
+    let evaluated = eval(&program, env)?;
     match &*evaluated {
         Object::Array(array) => {
             assert_eq!(array.len(), 3);
@@ -219,7 +219,7 @@ fn test_eval_expression_array_index() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         match &*evaluated {
             Object::Null => assert_eq!(tt.1, None),
             _ => {
@@ -252,7 +252,7 @@ fn test_eval_operator_bang() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         assert_eq!(is_object_boolean(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
@@ -276,7 +276,7 @@ fn test_eval_expression_ifelse() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         if let Some(expected) = tt.1 {
             assert_eq!(is_object_integer(&*evaluated, tt.0, expected), true);
         } else {
@@ -302,7 +302,7 @@ fn test_eval_statement_return() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
@@ -322,6 +322,10 @@ fn test_error_handling() -> Result<(), EvalError> {
             "illegal operator: true + false",
         ),
         ("\"Hello\" - \"World\"", "illegal operator: Hello - World"),
+        (
+            "{\"name\": \"Monkey\"}[fn(x) {x}];",
+            "unusable as hash key: fn(x) {\nx\n}",
+        ),
     ];
 
     for tt in tests {
@@ -330,7 +334,7 @@ fn test_error_handling() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env));
+        let evaluated = eval(&program, env);
         match evaluated {
             Err(msg) => assert!(
                 &msg.message == tt.1,
@@ -364,7 +368,7 @@ fn test_let_statements() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
@@ -408,7 +412,7 @@ fn test_function_application() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
@@ -428,7 +432,7 @@ fn test_builtin_functions() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        let evaluated = eval(&program, Rc::clone(&env))?;
+        let evaluated = eval(&program, env)?;
         assert_eq!(is_object_integer(&*evaluated, tt.0, tt.1), true);
     }
     Ok(())
@@ -450,7 +454,7 @@ fn test_illegal_builtin_functions() -> Result<(), EvalError> {
 
         let program = p.parse_program();
         let env = Environment::new();
-        match eval(&program, Rc::clone(&env)) {
+        match eval(&program, env) {
             Err(error) => assert_eq!(error.message, tt.1),
             _ => {}
         }
@@ -497,5 +501,33 @@ fn test_hash_object() -> Result<(), EvalError> {
         }
         _ => assert!(false, "object is not Hash. got {}", evaluated),
     };
+    Ok(())
+}
+
+#[test]
+fn test_hash_index_expressions() -> Result<(), EvalError> {
+    let tests = vec![
+        ("{\"foo\": 5}[\"foo\"]", Some(5)),
+        ("{\"foo\": 5}[\"bar\"]", None),
+        ("let key = \"foo\"; {\"foo\": 5}[key]", Some(5)),
+        ("{}[\"foo\"]", None),
+        ("{5:5}[5]", Some(5)),
+        ("{true:5}[true]", Some(5)),
+        ("{false:5}[false]", Some(5)),
+    ];
+
+    for tt in tests {
+        let l = Lexer::new(tt.0);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        let env = Environment::new();
+        let evaluated = eval(&program, env)?;
+        if let Some(expected) = tt.1 {
+            assert_eq!(is_object_integer(&*evaluated, tt.0, expected), true);
+        } else {
+            assert_eq!(&*evaluated, &Object::Null);
+        }
+    }
     Ok(())
 }

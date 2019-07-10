@@ -397,7 +397,7 @@ fn eval_expression(
             let index = eval_expression(right, env)?;
             eval_index_expression(array, index)
         }
-        Expression::Hash(hash_literal) => eval_hash_expression(hash_literal, env),
+        Expression::Hash(hash) => eval_hash_expression(hash, env),
         //_ => Err(EvalError {
         //    message: format!("to be implemented {}", expr),
         //}),
@@ -467,6 +467,7 @@ fn eval_index_expression(array: Rc<Object>, index: Rc<Object>) -> Result<Rc<Obje
         (Object::Array(array), Object::Integer(index)) => {
             eval_array_index_expression(array, *index)
         }
+        (Object::Hash(hash), _) => eval_hash_index_expression(hash, index),
         _ => Err(EvalError {
             message: format!("index operator not supported: {}", array),
         }),
@@ -474,12 +475,12 @@ fn eval_index_expression(array: Rc<Object>, index: Rc<Object>) -> Result<Rc<Obje
 }
 
 fn eval_hash_expression(
-    hash_literal: &HashLiteral,
+    hash: &HashLiteral,
     env: Rc<RefCell<Environment>>,
 ) -> Result<Rc<Object>, EvalError> {
     let mut pairs: HashMap<Rc<Object>, Rc<Object>> = HashMap::new();
 
-    for (key, val) in &hash_literal.pairs {
+    for (key, val) in &hash.pairs {
         let key = eval_expression(key, Rc::clone(&env))?;
         let val = eval_expression(val, Rc::clone(&env))?;
         pairs.insert(key, val);
@@ -529,6 +530,24 @@ fn eval_array_index_expression(array: &[Rc<Object>], index: i64) -> Result<Rc<Ob
         Ok(Rc::new(Object::Null))
     } else {
         Ok(Rc::clone(&array[index as usize]))
+    }
+}
+
+fn eval_hash_index_expression(
+    hash: &HashObject,
+    index: Rc<Object>,
+) -> Result<Rc<Object>, EvalError> {
+    match &*index {
+        Object::String(_) | Object::Boolean(_) | Object::Integer(_) => {
+            if let Some(val) = hash.pairs.get(&*index) {
+                Ok(Rc::clone(val))
+            } else {
+                Ok(Rc::new(Object::Null))
+            }
+        }
+        _ => Err(EvalError {
+            message: format!("unusable as hash key: {}", index),
+        }),
     }
 }
 
