@@ -33,6 +33,7 @@ pub enum Builtin {
     Last,
     Rest,
     Push,
+    Print,
 }
 
 impl Builtin {
@@ -43,6 +44,7 @@ impl Builtin {
             "last" => Some(Rc::new(Object::Builtin(Builtin::Last))),
             "rest" => Some(Rc::new(Object::Builtin(Builtin::Rest))),
             "push" => Some(Rc::new(Object::Builtin(Builtin::Push))),
+            "print" => Some(Rc::new(Object::Builtin(Builtin::Print))),
             _ => None,
         }
     }
@@ -152,6 +154,12 @@ impl Builtin {
                         message: format!("argument to \"push\" not supported, got {}", args[0]),
                     }),
                 }
+            }
+            Builtin::Print => {
+                for arg in args {
+                    println!("{}", arg);
+                }
+                Ok(Rc::new(Object::Null))
             }
         }
     }
