@@ -22,14 +22,14 @@ pub fn start<R: io::BufRead, W: io::Write>(mut reader: R, mut writer: W) -> io::
         let errors = p.errors();
         if errors.len() != 0 {
             for error in errors {
-                writer.write(format!("\t{}\t\n", error).as_bytes())?;
+                write!(writer, "\t{}\t\n", error)?;
             }
             continue;
         }
 
         match eval(&program, Rc::clone(&env)) {
-            Ok(evaluated) => writer.write(format!("{}\n", evaluated).as_bytes())?,
-            Err(err) => writer.write(format!("error: {}\n", err).as_bytes())?,
+            Ok(evaluated) => write!(writer, "{}\n", evaluated)?,
+            Err(err) => write!(writer, "error: {}\n", err)?,
         };
     }
 }
